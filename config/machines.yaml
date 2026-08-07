@@ -1,0 +1,16 @@
+machines:
+  prusa_mini:
+    name: "Prusa Mini+"
+    build_volume: [180, 180, 180]
+    max_print_speed: 100
+    power_consumption: 120
+  ender_3:
+    name: "Creality Ender 3"
+    build_volume: [220, 220, 250]
+    max_print_speed: 80
+    power_consumption: 360
+  voron_2_4:
+    name: "Voron 2.4"
+    build_volume: [350, 350, 340]
+    max_print_speed: 300
+    power_consumption: 500

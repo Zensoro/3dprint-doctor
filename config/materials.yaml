@@ -1,0 +1,25 @@
+materials:
+  PLA:
+    density: 1.24
+    nozzle_temperature: 200
+    bed_temperature: 60
+    print_speed: 60
+    price_per_kg: 25
+  PETG:
+    density: 1.27
+    nozzle_temperature: 230
+    bed_temperature: 80
+    print_speed: 50
+    price_per_kg: 30
+  ABS:
+    density: 1.04
+    nozzle_temperature: 240
+    bed_temperature: 100
+    print_speed: 60
+    price_per_kg: 28
+  TPU:
+    density: 1.21
+    nozzle_temperature: 220
+    bed_temperature: 50
+    print_speed: 30
+    price_per_kg: 35
