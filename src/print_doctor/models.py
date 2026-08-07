@@ -60,3 +60,39 @@ class PrintConfig:
     print_speed_mm_s: float = 60.0
     bed_temperature: float = 60.0
     nozzle_temperature: float = 200.0
+
+
+class DefectType(Enum):
+    """Types of print defects detectable from photos."""
+    STRINGING = "stringing"
+    WARPING = "warping"
+    LAYER_SHIFT = "layer_shift"
+    UNDER_EXTRUSION = "under_extrusion"
+    OVER_EXTRUSION = "over_extrusion"
+    COLOR_BLEEDING = "color_bleeding"
+    FIRST_LAYER_FAILURE = "first_layer_failure"
+
+
+@dataclass
+class Defect:
+    """A single detected defect from photo diagnosis."""
+    type: DefectType
+    confidence: float  # 0.0 - 1.0
+    evidence: str  # explainable evidence chain
+
+
+@dataclass
+class RootCause:
+    """A likely root cause with actionable fix."""
+    cause: str
+    likelihood: float  # 0.0 - 1.0
+    fix: str  # which parameter to change and in which direction
+
+
+@dataclass
+class Diagnosis:
+    """Result of diagnosing a printed part from photos."""
+    filename: str
+    defects: List[Defect]
+    root_causes: List[RootCause]
+    image_count: int

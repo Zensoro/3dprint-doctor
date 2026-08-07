@@ -43,3 +43,9 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 print-doctor = "print_doctor.cli:app"
+
+[tool.poetry.group.vision]
+optional = true
+
+[tool.poetry.group.vision.dependencies]
+opencv-python-headless = "^4.10.0"
