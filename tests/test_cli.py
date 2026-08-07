@@ -1,0 +1,62 @@
+import os
+import tempfile
+from pathlib import Path
+import trimesh
+from typer.testing import CliRunner
+from print_doctor.cli import app
+
+runner = CliRunner()
+
+
+def test_check_command_help():
+    """Test check command help."""
+    result = runner.invoke(app, ["check", "--help"])
+    assert result.exit_code == 0
+    assert "Analyze a 3D model" in result.output
+
+
+def test_version_command():
+    """Test version command."""
+    result = runner.invoke(app, ["version"])
+    assert result.exit_code == 0
+    assert "Print Doctor" in result.output
+
+
+def test_check_valid_model():
+    """Test check with a valid model produces a report."""
+    mesh = trimesh.creation.icosphere(subdivisions=2)
+
+    with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as f:
+        mesh.export(f.name)
+        temp_path = f.name
+
+    try:
+        result = runner.invoke(app, ["check", temp_path])
+        assert result.exit_code == 0
+        assert "Printability Score" in result.output
+        assert "Mesh Information" in result.output
+    finally:
+        os.unlink(temp_path)
+
+
+def test_check_missing_file():
+    """Test check with a missing file exits with error."""
+    result = runner.invoke(app, ["check", "/nonexistent/model.stl"])
+    assert result.exit_code == 1
+    assert "Error" in result.output
+
+
+def test_check_output_file():
+    """Test check writes report to file."""
+    mesh = trimesh.creation.box(extents=[10, 10, 10])
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        model_path = os.path.join(tmpdir, "model.stl")
+        report_path = os.path.join(tmpdir, "report.md")
+        mesh.export(model_path)
+
+        result = runner.invoke(app, ["check", model_path, "-o", report_path])
+        assert result.exit_code == 0
+        assert os.path.exists(report_path)
+        content = Path(report_path).read_text()
+        assert "Print Doctor Report" in content
