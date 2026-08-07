@@ -89,33 +89,62 @@ def validate_mesh(mesh: trimesh.Trimesh) -> List[Issue]:
 
 
 def detect_thin_walls(
-    mesh: trimesh.Trimesh, 
-    min_thickness: float = 0.8
+    mesh: trimesh.Trimesh,
+    min_thickness: float = 0.8,
+    sample_count: int = 500,
 ) -> List[Issue]:
     """Detect walls thinner than minimum thickness.
-    
+
+    Samples points on the mesh surface and casts rays along inward
+    normals, measuring the distance to the opposite surface. Regions
+    where that distance is below `min_thickness` are reported as thin
+    walls.
+
     Args:
         mesh: Trimesh object to analyze
         min_thickness: Minimum allowed thickness in mm
-        
+        sample_count: Number of surface points to sample
+
     Returns:
         List of thin wall issues
     """
     issues = []
-    
-    # Get bounding box dimensions
-    extents = mesh.bounding_box.extents
-    
-    # Check each dimension
-    axis_names = ['X', 'Y', 'Z']
-    for i, (extent, axis) in enumerate(zip(extents, axis_names)):
-        if extent < min_thickness:
-            issues.append(Issue(
-                name="thin_wall",
-                description=f"Wall thickness in {axis} direction is {extent:.2f}mm (minimum: {min_thickness}mm)",
-                severity=Severity.WARNING,
-                location=f"{axis} axis: {extent:.2f}mm",
-                suggestion=f"Increase {axis} dimension to at least {min_thickness}mm",
-            ))
-    
+
+    points, face_indices = trimesh.sample.sample_surface(mesh, sample_count)
+    normals = mesh.face_normals[face_indices]
+    origins = points - normals * 1e-4
+
+    locations, ray_indices, _ = mesh.ray.intersects_location(
+        origins, -normals
+    )
+    if len(locations) == 0:
+        return issues
+
+    distances = np.linalg.norm(locations - origins[ray_indices], axis=1)
+    # Filter out self-hits (rays that immediately re-hit the origin face)
+    distances = distances[distances > 0.05]
+
+    if len(distances) == 0:
+        return issues
+
+    thin_mask = distances < min_thickness
+    thin_count = int(np.sum(thin_mask))
+    if thin_count > 0:
+        percentage = thin_count / len(distances) * 100
+        min_hit = float(distances[thin_mask].min())
+        issues.append(Issue(
+            name="thin_wall",
+            description=(
+                f"Found thin wall regions: {thin_count}/{len(distances)} "
+                f"sample points ({percentage:.1f}%) have local thickness "
+                f"below {min_thickness}mm (minimum measured: {min_hit:.2f}mm)"
+            ),
+            severity=Severity.WARNING,
+            location=f"{percentage:.1f}% of sampled surface",
+            suggestion=(
+                f"Increase wall thickness to at least {min_thickness}mm, "
+                "or hollow out and re-model the thin section"
+            ),
+        ))
+
     return issues
