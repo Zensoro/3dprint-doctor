@@ -148,3 +148,60 @@ def detect_thin_walls(
         ))
 
     return issues
+
+
+def detect_overhangs(
+    mesh: trimesh.Trimesh,
+    max_angle_degrees: float = 45.0,
+) -> List[Issue]:
+    """Detect faces that exceed the maximum overhang angle.
+
+    Only faces whose normals point downward (negative Z) are
+    considered. The overhang angle is measured from the vertical-down
+    direction: 0 degrees means the face is horizontal (facing down,
+    worst case), 90 degrees means it is nearly vertical. Faces with an
+    overhang angle below `max_angle_degrees` are reported.
+
+    Args:
+        mesh: Trimesh object to analyze
+        max_angle_degrees: Maximum allowed overhang angle; faces more
+            horizontal than this are reported
+
+    Returns:
+        List of overhang issues
+    """
+    issues = []
+
+    normals = mesh.face_normals
+    nz = normals[:, 2]
+    downward = nz < 0
+
+    if not np.any(downward):
+        return issues
+
+    # Angle from vertical-down direction for downward faces
+    overhang_angles = np.degrees(np.arccos(np.clip(-nz[downward], 0.0, 1.0)))
+
+    overhang_mask = overhang_angles < max_angle_degrees
+    overhang_count = int(np.sum(overhang_mask))
+
+    if overhang_count > 0:
+        total_faces = len(mesh.faces)
+        overhang_percentage = overhang_count / total_faces * 100
+
+        issues.append(Issue(
+            name="overhang",
+            description=(
+                f"Found {overhang_count} faces ({overhang_percentage:.1f}%) "
+                f"with overhang angle below {max_angle_degrees} degrees "
+                "(measured from horizontal)"
+            ),
+            severity=Severity.WARNING,
+            location=f"{overhang_count} faces",
+            suggestion=(
+                "Add support structures or rotate the model to reduce "
+                "overhang angles below the printability threshold"
+            ),
+        ))
+
+    return issues
