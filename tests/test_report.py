@@ -87,3 +87,31 @@ def test_generate_report_error_first():
     report = generate_report(analysis, None)
 
     assert report.index("error_issue") < report.index("warning_issue")
+
+
+def test_generate_html_report():
+    """Test HTML report generation."""
+    from print_doctor.report import generate_html_report
+    analysis = _make_analysis(issues=[
+        Issue(
+            name="thin_wall", description="d", severity=Severity.WARNING,
+            location="l", suggestion="s",
+        ),
+    ])
+    html = generate_html_report(analysis, _make_estimate())
+
+    assert "<!DOCTYPE html>" in html
+    assert "test.stl" in html
+    assert "85.0" in html
+    assert "thin_wall" in html
+    assert "$10.50" in html
+
+
+def test_generate_html_report_no_cost():
+    """Test HTML report without cost estimate."""
+    from print_doctor.report import generate_html_report
+    html = generate_html_report(_make_analysis(score=100.0), None)
+
+    assert "<!DOCTYPE html>" in html
+    assert "No issues found" in html
+    assert "Cost Estimate" not in html

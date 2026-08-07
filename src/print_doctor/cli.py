@@ -20,6 +20,7 @@ console = Console()
 def check(
     model_path: str = typer.Argument(..., help="Path to STL/3MF file"),
     output: str = typer.Option(None, "-o", "--output", help="Output report path"),
+    html: bool = typer.Option(False, "--html", help="Generate HTML report instead of Markdown"),
     material: str = typer.Option(
         "PLA", "-m", "--material", help="Material type (PLA/PETG/ABS/TPU)"
     ),
@@ -51,7 +52,11 @@ def check(
                 machine_power_watts=200.0,
             )
 
-        report = generate_report(analysis, estimate)
+        if html:
+            from print_doctor.report import generate_html_report
+            report = generate_html_report(analysis, estimate)
+        else:
+            report = generate_report(analysis, estimate)
 
         if output:
             Path(output).write_text(report)
