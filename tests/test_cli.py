@@ -60,3 +60,39 @@ def test_check_output_file():
         assert os.path.exists(report_path)
         content = Path(report_path).read_text()
         assert "Print Doctor Report" in content
+
+
+def test_check_exit_code_with_errors():
+    """Test that a model with ERROR-level issues exits non-zero."""
+    import numpy as np
+    b1 = trimesh.creation.box(extents=[10, 10, 10])
+    b2 = trimesh.creation.box(extents=[10, 10, 10])
+    b2.apply_translation([5, 5, 5])
+    broken = trimesh.Trimesh(
+        vertices=np.vstack([b1.vertices, b2.vertices]),
+        faces=np.vstack([b1.faces, b2.faces + len(b1.vertices)]),
+    )
+    with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as f:
+        broken.export(f.name)
+        temp_path = f.name
+
+    try:
+        result = runner.invoke(app, ["check", temp_path, "--no-cost"])
+        assert result.exit_code == 1
+        assert "Error:" not in result.output
+    finally:
+        os.unlink(temp_path)
+
+
+def test_check_exit_code_clean_model():
+    """Test that a healthy model exits zero."""
+    mesh = trimesh.creation.icosphere(subdivisions=2)
+    with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as f:
+        mesh.export(f.name)
+        temp_path = f.name
+
+    try:
+        result = runner.invoke(app, ["check", temp_path, "--no-cost"])
+        assert result.exit_code == 0
+    finally:
+        os.unlink(temp_path)

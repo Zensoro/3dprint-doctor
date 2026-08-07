@@ -22,7 +22,12 @@ class Issue:
 
 @dataclass
 class MeshAnalysis:
-    """Result of analyzing a 3D mesh."""
+    """Result of analyzing a 3D mesh.
+
+    Note: ``volume`` is in cubic millimeters (trimesh native units,
+    models are assumed to be sized in mm); ``surface_area`` is in
+    square millimeters.
+    """
     filename: str
     is_watertight: bool
     is_manifold: bool

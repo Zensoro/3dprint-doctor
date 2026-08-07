@@ -42,7 +42,7 @@ def check(
             )
             config = PrintConfig(material_type=material)
             estimate = calculate_cost(
-                volume_cm3=analysis.volume,
+                volume_cm3=analysis.volume / 1000.0,  # mm3 -> cm3
                 config=config,
                 material_price_per_kg=price,
                 electricity_price_per_kwh=0.12,
@@ -57,11 +57,11 @@ def check(
         else:
             console.print(report)
 
-        if any(i.severity == Severity.ERROR for i in analysis.issues):
-            raise typer.Exit(code=1)
-
     except Exception as e:
         console.print(f"[bold red]Error: {e}[/bold red]")
+        raise typer.Exit(code=1)
+
+    if any(i.severity == Severity.ERROR for i in analysis.issues):
         raise typer.Exit(code=1)
 
 

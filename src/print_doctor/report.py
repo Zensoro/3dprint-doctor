@@ -27,8 +27,8 @@ def generate_report(
     lines.append(f"- **Watertight:** {'yes' if analysis.is_watertight else 'no'}")
     lines.append(f"- **Manifold:** {'yes' if analysis.is_manifold else 'no'}")
     lines.append(f"- **Triangles:** {analysis.triangle_count:,}")
-    lines.append(f"- **Volume:** {analysis.volume:.2f} cm3")
-    lines.append(f"- **Surface Area:** {analysis.surface_area:.2f} cm2")
+    lines.append(f"- **Volume:** {analysis.volume / 1000.0:.2f} cm3")
+    lines.append(f"- **Surface Area:** {analysis.surface_area / 100.0:.2f} cm2")
     lines.append(
         "- **Bounding Box:** "
         f"{analysis.bounding_box[0]:.1f} x {analysis.bounding_box[1]:.1f} "
