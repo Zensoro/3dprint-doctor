@@ -205,3 +205,112 @@ def detect_overhangs(
         ))
 
     return issues
+
+
+def _segment_triangle_intersect(
+    p1: np.ndarray,
+    p2: np.ndarray,
+    tri: np.ndarray,
+    eps: float = 1e-9,
+) -> bool:
+    """Check whether segment p1-p2 intersects triangle tri (Möller-Trumbore)."""
+    v0, v1, v2 = tri
+    e1 = v1 - v0
+    e2 = v2 - v0
+    d = p2 - p1
+
+    pvec = np.cross(d, e2)
+    det = np.dot(e1, pvec)
+    if abs(det) < eps:
+        return False
+
+    inv = 1.0 / det
+    tvec = p1 - v0
+    u = np.dot(tvec, pvec) * inv
+    if u < -eps or u > 1.0 + eps:
+        return False
+
+    qvec = np.cross(tvec, e1)
+    v = np.dot(d, qvec) * inv
+    if v < -eps or u + v > 1.0 + eps:
+        return False
+
+    t = np.dot(e2, qvec) * inv
+    return -eps <= t <= 1.0 + eps
+
+
+def _triangles_intersect(t1: np.ndarray, t2: np.ndarray) -> bool:
+    """Check whether two triangles genuinely intersect (not just touch)."""
+    for i in range(3):
+        if _segment_triangle_intersect(t1[i], t1[(i + 1) % 3], t2):
+            return True
+    for i in range(3):
+        if _segment_triangle_intersect(t2[i], t2[(i + 1) % 3], t1):
+            return True
+    return False
+
+
+def detect_self_intersections(
+    mesh: trimesh.Trimesh,
+    max_triangles: int = 200_000,
+) -> List[Issue]:
+    """Detect self-intersecting faces in the mesh.
+
+    Uses an R-tree over triangle bounding boxes to find candidate
+    pairs, then confirms with an exact segment-triangle intersection
+    test. Triangles sharing vertices (legitimate adjacency) are
+    skipped.
+
+    Args:
+        mesh: Trimesh object to analyze
+        max_triangles: Skip analysis for meshes larger than this
+            many triangles (performance guard)
+
+    Returns:
+        List of self-intersection issues
+    """
+    issues = []
+
+    triangles = mesh.triangles
+    faces = mesh.faces
+    n = len(triangles)
+
+    if n < 2 or n > max_triangles:
+        return issues
+
+    mins = triangles.min(axis=1)
+    maxs = triangles.max(axis=1)
+    tree = mesh.triangles_tree
+
+    intersecting_pairs = []
+    for i in range(n):
+        query = (
+            float(mins[i][0]), float(mins[i][1]), float(mins[i][2]),
+            float(maxs[i][0]), float(maxs[i][1]), float(maxs[i][2]),
+        )
+        for j in tree.intersection(query):
+            j = int(j)
+            if j <= i:
+                continue
+            # Skip triangles sharing vertices (adjacency, not intersection)
+            if len(set(faces[i]) & set(faces[j])) > 0:
+                continue
+            if _triangles_intersect(triangles[i], triangles[j]):
+                intersecting_pairs.append((i, j))
+
+    if intersecting_pairs:
+        issues.append(Issue(
+            name="self_intersection",
+            description=(
+                f"Mesh has {len(intersecting_pairs)} intersecting face "
+                "pairs; it cannot be sliced or printed correctly"
+            ),
+            severity=Severity.ERROR,
+            location=f"{len(intersecting_pairs)} face pairs",
+            suggestion=(
+                "Repair the mesh with MeshLab (Filters -> Cleaning -> "
+                "Remove Self Intersections) or re-export from CAD"
+            ),
+        ))
+
+    return issues
