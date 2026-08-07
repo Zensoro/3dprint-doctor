@@ -317,6 +317,72 @@ def detect_self_intersections(
     return issues
 
 
+def detect_isolated_faces(mesh: trimesh.Trimesh) -> List[Issue]:
+    """Detect disconnected components (isolated shells) in the mesh.
+
+    Args:
+        mesh: Trimesh object to analyze
+
+    Returns:
+        List of issues for disconnected components
+    """
+    issues = []
+
+    body_count = mesh.body_count
+    if body_count > 1:
+        issues.append(Issue(
+            name="isolated_faces",
+            description=(
+                f"Mesh has {body_count} disconnected components; "
+                "parts may print detached from each other"
+            ),
+            severity=Severity.WARNING,
+            location=f"{body_count} components",
+            suggestion=(
+                "Join all components into a single watertight mesh in "
+                "your CAD software before slicing"
+            ),
+        ))
+
+    return issues
+
+
+def detect_extreme_aspect_ratio(
+    mesh: trimesh.Trimesh,
+    min_area: float = 1e-6,
+) -> List[Issue]:
+    """Detect sliver triangles with very small area.
+
+    Args:
+        mesh: Trimesh object to analyze
+        min_area: Area threshold below which a triangle is a sliver
+
+    Returns:
+        List of sliver triangle issues
+    """
+    issues = []
+
+    areas = mesh.area_faces
+    sliver_count = int(np.sum(areas < min_area))
+
+    if sliver_count > 0:
+        issues.append(Issue(
+            name="sliver_triangles",
+            description=(
+                f"Found {sliver_count} sliver triangles with area below "
+                f"{min_area:.2e}; these can cause slicing artifacts"
+            ),
+            severity=Severity.INFO,
+            location=f"{sliver_count} triangles",
+            suggestion=(
+                "Simplify the mesh or remesh the affected regions to "
+                "remove degenerate triangles"
+            ),
+        ))
+
+    return issues
+
+
 def analyze_mesh(file_path: str) -> "MeshAnalysis":
     """Perform a complete printability analysis of a 3D model.
 
@@ -338,6 +404,8 @@ def analyze_mesh(file_path: str) -> "MeshAnalysis":
     issues.extend(detect_thin_walls(mesh))
     issues.extend(detect_overhangs(mesh))
     issues.extend(detect_self_intersections(mesh))
+    issues.extend(detect_isolated_faces(mesh))
+    issues.extend(detect_extreme_aspect_ratio(mesh))
 
     penalty = 0
     for issue in issues:
