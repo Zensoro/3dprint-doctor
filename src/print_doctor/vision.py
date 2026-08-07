@@ -150,8 +150,9 @@ def detect_extrusion(
 ) -> List[Defect]:
     """Detect under- or over-extrusion from surface texture.
 
-    Evidence: local variance of body pixels (pitting -> high variance
-    with dark specks; blobs -> high variance with bright specks).
+    Evidence: scattered small dark pits (under-extrusion) or bright
+    blobs (over-extrusion). Uses connected-component analysis so that
+    large contiguous dark regions (e.g. warp shadows) are not counted.
     """
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     body = gray * (mask > 0).astype(np.uint8)
@@ -159,34 +160,51 @@ def detect_extrusion(
     if len(body_px) < 500:
         return []
 
+    med = np.median(body_px)
+
+    dark_bin = np.zeros_like(gray)
+    dark_bin[(body < med - 25) & (mask > 0)] = 255
+    bright_bin = np.zeros_like(gray)
+    bright_bin[(body > med + 25) & (mask > 0)] = 255
+
+    def small_component_ratio(
+        binary: np.ndarray, max_area: int = 300, max_aspect: float = 3.0
+    ) -> float:
+        num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(binary, 8)
+        total = 0
+        for i in range(1, num_labels):
+            x, y, w, h, area = stats[i]
+            if area <= max_area and max(w, h) / max(min(w, h), 1) <= max_aspect:
+                total += area
+        return total / max(len(body_px), 1)
+
+    dark_ratio = small_component_ratio(dark_bin)
+    bright_ratio = small_component_ratio(bright_bin)
+
     # High-frequency detail: Laplacian variance
     lap = cv2.Laplacian(gray, cv2.CV_64F)
     body_lap = (lap * (mask > 0).astype(np.float64))
     lap_var = float(np.var(body_lap[body_lap != 0]))
 
-    # Dark speckle ratio (pitting) vs bright blob ratio (blobs)
-    dark_ratio = float(np.mean(body_px < (np.median(body_px) - 25)))
-    bright_ratio = float(np.mean(body_px > (np.median(body_px) + 25)))
-
     defects = []
-    if dark_ratio > 0.02:
+    if dark_ratio > 0.008:
         defects.append(Defect(
             type=DefectType.UNDER_EXTRUSION,
             confidence=min(0.85, 0.3 + dark_ratio * 15),
             evidence=(
-                f"{dark_ratio * 100:.1f}% of surface pixels are much "
-                "darker than the median with high texture variance "
-                f"({lap_var:.0f}), consistent with pitting/underfill"
+                f"{dark_ratio * 100:.1f}% of surface pixels belong to "
+                "scattered small dark pits (pitting), consistent with "
+                f"underfill (texture variance {lap_var:.0f})"
             ),
         ))
-    elif bright_ratio > 0.005:
+    elif bright_ratio > 0.003:
         defects.append(Defect(
             type=DefectType.OVER_EXTRUSION,
             confidence=min(0.85, 0.3 + bright_ratio * 20),
             evidence=(
-                f"{bright_ratio * 100:.1f}% of surface pixels are much "
-                "brighter than the median, consistent with excess "
-                "material blobs"
+                f"{bright_ratio * 100:.1f}% of surface pixels belong to "
+                "scattered small bright blobs, consistent with excess "
+                "material"
             ),
         ))
     return defects

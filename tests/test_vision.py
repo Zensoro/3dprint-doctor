@@ -80,3 +80,18 @@ def test_normal_image_clean():
     all_detected |= _types(detect_color_bleeding(img, mask))
     all_detected |= _types(detect_first_layer_failure(img, mask))
     assert len(all_detected) <= 1  # allow at most one borderline hit
+
+
+def test_warping_not_misclassified_as_extrusion():
+    """A warped print's shadow should not be counted as under-extrusion."""
+    img, mask = _load("warping")
+    defects = detect_extrusion(img, mask)
+    assert not any(d.type == DefectType.UNDER_EXTRUSION for d in defects)
+    assert not any(d.type == DefectType.OVER_EXTRUSION for d in defects)
+
+
+def test_stringing_not_misclassified():
+    """Strings (thin lines) should not be counted as extrusion defects."""
+    img, mask = _load("stringing")
+    defects = detect_extrusion(img, mask)
+    assert not any(d.type == DefectType.UNDER_EXTRUSION for d in defects)
