@@ -20,7 +20,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest trimesh numpy typer rich rtree scipy
+          pip install pytest trimesh numpy typer rich rtree scipy manifold3d
           pip install -e .
       - name: Generate test fixtures
         run: python tests/generate_fixtures.py
