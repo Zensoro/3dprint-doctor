@@ -96,3 +96,25 @@ def test_check_exit_code_clean_model():
         assert result.exit_code == 0
     finally:
         os.unlink(temp_path)
+
+
+def test_diagnose_command_help():
+    """Test diagnose command help."""
+    result = runner.invoke(app, ["diagnose", "--help"])
+    assert result.exit_code == 0
+    assert "Diagnose a printed part" in result.output
+
+
+def test_diagnose_command_with_photo():
+    """Test diagnose with a defect photo exits with code 2."""
+    photo = Path(__file__).parent / "fixtures" / "diagnose" / "stringing.jpg"
+    result = runner.invoke(app, ["diagnose", str(photo)])
+    assert result.exit_code == 2
+    assert "stringing" in result.output
+
+
+def test_diagnose_clean_photo_exit_zero():
+    """Test diagnose with a clean photo exits zero."""
+    photo = Path(__file__).parent / "fixtures" / "diagnose" / "normal.jpg"
+    result = runner.invoke(app, ["diagnose", str(photo)])
+    assert result.exit_code == 0
