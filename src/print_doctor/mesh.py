@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import List
+import os
 import trimesh
 import numpy as np
 
@@ -314,3 +315,49 @@ def detect_self_intersections(
         ))
 
     return issues
+
+
+def analyze_mesh(file_path: str) -> "MeshAnalysis":
+    """Perform a complete printability analysis of a 3D model.
+
+    Args:
+        file_path: Path to an STL/3MF file
+
+    Returns:
+        MeshAnalysis with mesh stats, detected issues and a score
+
+    Raises:
+        ValueError: If the file cannot be loaded
+    """
+    from print_doctor.models import MeshAnalysis
+
+    mesh = load_mesh(file_path)
+
+    issues = []
+    issues.extend(validate_mesh(mesh))
+    issues.extend(detect_thin_walls(mesh))
+    issues.extend(detect_overhangs(mesh))
+    issues.extend(detect_self_intersections(mesh))
+
+    penalty = 0
+    for issue in issues:
+        if issue.severity == Severity.ERROR:
+            penalty += 20
+        elif issue.severity == Severity.WARNING:
+            penalty += 10
+        else:
+            penalty += 5
+
+    score = max(0.0, 100.0 - penalty)
+
+    return MeshAnalysis(
+        filename=os.path.basename(file_path),
+        is_watertight=mesh.is_watertight,
+        is_manifold=mesh.is_volume,
+        triangle_count=len(mesh.faces),
+        volume=float(mesh.volume) if mesh.volume is not None else 0.0,
+        surface_area=float(mesh.area),
+        bounding_box=tuple(float(x) for x in mesh.bounding_box.extents),
+        issues=issues,
+        score=score,
+    )
