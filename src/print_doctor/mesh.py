@@ -86,3 +86,36 @@ def validate_mesh(mesh: trimesh.Trimesh) -> List[Issue]:
         ))
     
     return issues
+
+
+def detect_thin_walls(
+    mesh: trimesh.Trimesh, 
+    min_thickness: float = 0.8
+) -> List[Issue]:
+    """Detect walls thinner than minimum thickness.
+    
+    Args:
+        mesh: Trimesh object to analyze
+        min_thickness: Minimum allowed thickness in mm
+        
+    Returns:
+        List of thin wall issues
+    """
+    issues = []
+    
+    # Get bounding box dimensions
+    extents = mesh.bounding_box.extents
+    
+    # Check each dimension
+    axis_names = ['X', 'Y', 'Z']
+    for i, (extent, axis) in enumerate(zip(extents, axis_names)):
+        if extent < min_thickness:
+            issues.append(Issue(
+                name="thin_wall",
+                description=f"Wall thickness in {axis} direction is {extent:.2f}mm (minimum: {min_thickness}mm)",
+                severity=Severity.WARNING,
+                location=f"{axis} axis: {extent:.2f}mm",
+                suggestion=f"Increase {axis} dimension to at least {min_thickness}mm",
+            ))
+    
+    return issues
