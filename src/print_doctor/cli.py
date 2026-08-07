@@ -114,5 +114,57 @@ def version() -> None:
     console.print(f"Print Doctor v{__version__}")
 
 
+@app.command()
+def check_batch(
+    models: List[str] = typer.Argument(..., help="Model files or directories"),
+    output: str = typer.Option(None, "-o", "--output", help="Output summary path (md)"),
+    material: str = typer.Option("PLA", "-m", "--material", help="Material type"),
+) -> None:
+    """Analyze multiple models and print a comparison summary."""
+    paths: List[Path] = []
+    for m in models:
+        p = Path(m)
+        if p.is_dir():
+            paths.extend(sorted(p.glob("*.stl")) + sorted(p.glob("*.3mf")))
+        else:
+            paths.append(p)
+
+    if not paths:
+        console.print("[bold red]No model files found[/bold red]")
+        raise typer.Exit(code=1)
+
+    results = []
+    for p in paths:
+        try:
+            analysis = analyze_mesh(str(p))
+            results.append((p.name, analysis))
+        except Exception as e:
+            console.print(f"[yellow]Skipped {p.name}: {e}[/yellow]")
+
+    from print_doctor.models import Severity
+
+    lines = ["# Print Doctor Batch Summary", ""]
+    lines.append("| Model | Score | Issues | Errors | Volume (cm3) |")
+    lines.append("|---|---|---|---|---|")
+    for name, a in sorted(results, key=lambda r: r[1].score):
+        errors = sum(1 for i in a.issues if i.severity == Severity.ERROR)
+        lines.append(
+            f"| {name} | {a.score:.1f} | {len(a.issues)} | {errors} "
+            f"| {a.volume / 1000.0:.1f} |"
+        )
+    lines.append("")
+
+    summary = "\n".join(lines)
+    if output:
+        Path(output).write_text(summary)
+        console.print(f"[bold green]Summary saved to {output}[/bold green]")
+    else:
+        console.print(summary)
+
+    worst = min((a for _, a in results), key=lambda a: a.score, default=None)
+    if worst and any(i.severity == Severity.ERROR for i in worst.issues):
+        raise typer.Exit(code=1)
+
+
 if __name__ == "__main__":
     app()

@@ -118,3 +118,20 @@ def test_diagnose_clean_photo_exit_zero():
     photo = Path(__file__).parent / "fixtures" / "diagnose" / "normal.jpg"
     result = runner.invoke(app, ["diagnose", str(photo)])
     assert result.exit_code == 0
+
+
+def test_check_batch_directory():
+    """Test batch analysis of a directory of models."""
+    fixtures = Path(__file__).parent / "fixtures"
+    result = runner.invoke(app, ["check-batch", str(fixtures)])
+    assert result.exit_code in (0, 1)
+    assert "Batch Summary" in result.output
+
+
+def test_check_batch_single_file():
+    """Test batch analysis of explicit files."""
+    m1 = Path(__file__).parent / "fixtures" / "healthy.stl"
+    m2 = Path(__file__).parent / "fixtures" / "thin_wall.stl"
+    result = runner.invoke(app, ["check-batch", str(m1), str(m2)])
+    assert "| healthy.stl |" in result.output
+    assert "| thin_wall.stl |" in result.output
