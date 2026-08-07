@@ -32,11 +32,26 @@ def calculate_cost(
     electricity_price_per_kwh: float,
     machine_power_watts: float,
     profit_margin: float = 2.0,
+    shell_factor: float = 0.5,
 ) -> CostEstimate:
     """Calculate printing cost estimate.
 
-    Weight is estimated from model volume, material density and infill
-    ratio. Print time uses a volumetric flow model: layer width x layer
+    Weight is estimated from model volume, material density, infill
+    ratio and a shell factor. Real prints have solid outer perimeters
+    and solid top/bottom layers (100% infill) plus partial infill
+    inside, so simply scaling volume by infill understates weight.
+    The model used is:
+
+        effective_volume = volume * (shell_factor
+                                     + (1 - shell_factor) * infill_ratio)
+
+    ``shell_factor`` defaults to 0.5, calibrated against a 3DBenchy
+    print with 3 perimeters, 20% infill and default top/bottom layers
+    (measured ~11g vs 18.1g at 100% infill). It is size-dependent and
+    should be re-calibrated with ``scripts/calibrate.py`` against real
+    slicing data.
+
+    Print time uses a volumetric flow model: layer width x layer
     height x print speed, with an overhead factor to cover travel
     moves, heating and retractions.
 
@@ -47,6 +62,7 @@ def calculate_cost(
         electricity_price_per_kwh: Electricity cost per kWh
         machine_power_watts: Printer power consumption in watts
         profit_margin: Profit multiplier for suggested price
+        shell_factor: Fraction of material in solid outer shell
 
     Returns:
         CostEstimate with cost breakdown
@@ -54,7 +70,8 @@ def calculate_cost(
     density = get_material_density(config.material_type)
 
     infill_ratio = config.infill_percentage / 100.0
-    effective_volume = volume_cm3 * infill_ratio
+    effective_ratio = shell_factor + (1.0 - shell_factor) * infill_ratio
+    effective_volume = volume_cm3 * effective_ratio
     weight_grams = effective_volume * density
 
     # Volumetric flow: cross-section area (mm²) x speed (mm/s) x 3600 s/h
