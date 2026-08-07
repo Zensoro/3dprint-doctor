@@ -60,6 +60,23 @@ suitable for CI pipelines.
 PLA, PETG, ABS, TPU, Nylon — with built-in density and default price tables
 (see `config/materials.yaml` and `src/print_doctor/cost.py`).
 
+## Cost model calibration
+
+The weight estimate models solid outer perimeters plus partial infill via a
+`shell_factor` (default 0.5, calibrated against a 3DBenchy at 20% infill /
+3 perimeters: estimated 10.9g vs ~11g measured). Print time uses a volumetric
+flow model with a 1.3x overhead factor.
+
+For exact calibration against your printer and OrcaSlicer profile, run:
+
+```bash
+python scripts/calibrate.py models/benchy.stl models/other.stl
+```
+
+This slices each model with OrcaSlicer's CLI and prints a comparison table of
+estimated vs sliced time and weight, so you can tune `shell_factor` and the
+flow model to your setup.
+
 ## Example output
 
 ```markdown
