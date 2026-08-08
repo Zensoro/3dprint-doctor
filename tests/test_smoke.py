@@ -8,13 +8,13 @@ runner = CliRunner()
 
 
 def test_version_import():
-    assert __version__ == "0.5.0"
+    assert __version__ == "0.6.0"
 
 
 def test_cli_version():
     result = runner.invoke(app, ["version"])
     assert result.exit_code == 0
-    assert "Print Doctor v0.5.0" in result.output
+    assert "Print Doctor v0.6.0" in result.output
 
 
 def test_cli_check_help():

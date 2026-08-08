@@ -150,6 +150,24 @@ print-doctor watch 0 -e ./evidence -w https://hooks.example.com/alert -c 120
 On a defect it saves a timestamped evidence screenshot, prints an alert, and
 optionally POSTs JSON to a webhook:
 
+```json
+{"event": "print_defect", "defects": [{"type": "stringing", "confidence": 0.9}],
+ "evidence_image": "evidence/defect_....jpg"}
+```
+
+### Print-farm integration
+
+Monitor a Moonraker (Klipper) webcam snapshot directly:
+
+```bash
+print-doctor watch "http://your-printer:7125/server/webcams/snapshot?name=webcam" \
+  -i 5 -e ./evidence -w http://notify.example.com/alert
+```
+
+For OctoPrint, see `octoprint-print-doctor/` for a plugin that starts
+monitoring on print start, shows alerts in a tab, and can pause the print on
+defect.
+
 ### Python API
 
 ```python
