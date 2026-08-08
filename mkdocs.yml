@@ -33,6 +33,7 @@ nav:
       - Printability Checks: algorithms.md
       - Defect Diagnosis: diagnosis.md
       - Cost Model: cost.md
+      - Writing Detector Plugins: plugins.md
   - Data & Models:
       - Dataset: dataset.md
       - Training: training.md

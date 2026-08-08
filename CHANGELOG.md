@@ -2,6 +2,17 @@
 
 All notable changes to Print Doctor are documented here.
 
+## [0.7.0] - 2026-08-08
+
+### Added
+- Plugin architecture: `MeshDetector` interface, registry, and entry-point
+  discovery (`print_doctor.detectors` group).
+- Built-in detectors refactored to plugin classes.
+- `check --detector` filter + `detectors` CLI command.
+- MkDocs documentation site (10 pages, GitHub Pages).
+- Auto-release workflow (tag → build → PyPI → GitHub Release).
+- Community files: CHANGELOG, CONTRIBUTING, issue/PR templates.
+
 ## [0.6.0] - 2026-08-08
 
 ### Added
