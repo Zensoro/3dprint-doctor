@@ -79,6 +79,44 @@ class PrintMonitor:
         finally:
             cap.release()
 
+    def run_url(
+        self, url: str, stop_after: Optional[float] = None,
+        auth: Optional[tuple] = None,
+    ):
+        """Poll a snapshot URL (e.g. OctoPrint/Moonraker webcam) for defects.
+
+        Args:
+            url: HTTP(S) URL returning a JPEG image (webcam snapshot)
+            auth: Optional (user, password) basic auth tuple
+            stop_after: Stop after N seconds (testing)
+        """
+        import urllib.request
+
+        print(f"Monitoring {url} every {self.interval}s (Ctrl+C to stop)")
+        start = time.time()
+        opener = urllib.request.build_opener()
+        if auth:
+            import base64
+            token = base64.b64encode(f"{auth[0]}:{auth[1]}".encode()).decode()
+            opener.addheaders = [("Authorization", f"Basic {token}")]
+
+        try:
+            while True:
+                try:
+                    data = opener.open(url, timeout=15).read()
+                    frame = cv2.imdecode(
+                        np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR
+                    )
+                    if frame is not None:
+                        self.check_frame(frame)
+                except Exception as e:
+                    print(f"Snapshot fetch failed: {e}")
+                if stop_after and (time.time() - start) > stop_after:
+                    break
+                time.sleep(self.interval)
+        except KeyboardInterrupt:
+            print("\nStopped.")
+
     def run_directory(
         self, watch_dir: str, stop_after: Optional[float] = None
     ):

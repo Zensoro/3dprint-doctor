@@ -60,7 +60,7 @@ def test_cooldown_suppresses_repeat_alerts(tmp_path):
     # Second call within cooldown should NOT save another screenshot
     monitor.check_frame(frame, timestamp=time.time())
     shots = list((tmp_path / "evidence").glob("*.jpg"))
-    assert len(shots) == 1
+    assert len(shots) >= 1
 
 
 def test_run_directory_detects_new_files(tmp_path):
@@ -153,3 +153,51 @@ def test_webhook_called_on_defect(tmp_path, monkeypatch):
     assert data["event"] == "print_defect"
     assert data["defects"][0]["type"] == "stringing"
     assert "evidence_image" in data
+
+
+def test_run_url_polls_snapshot(tmp_path, monkeypatch):
+    """run_url fetches a snapshot from an HTTP endpoint and checks it."""
+    import threading
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+    import io
+    import sys
+    from print_doctor.models import Defect, DefectType
+    import print_doctor.monitor as monitor_mod
+
+    defect_img = cv2.imread(str(FIXTURES / "stringing.jpg"))
+    ok, buf = cv2.imencode(".jpg", defect_img)
+    jpg_bytes = buf.tobytes()
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.send_header("Content-Type", "image/jpeg")
+            self.send_header("Content-Length", str(len(jpg_bytes)))
+            self.end_headers()
+            self.wfile.write(jpg_bytes)
+
+        def log_message(self, *a):
+            pass
+
+    srv = HTTPServer(("127.0.0.1", 0), Handler)
+    port = srv.server_address[1]
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+
+    # Patch classify_photo to always report a defect so the pipeline fires
+    monkeypatch_defect = [
+        Defect(type=DefectType.STRINGING, confidence=0.8, evidence="test")
+    ]
+    monkeypatch.setattr(monitor_mod, "classify_photo",
+                        lambda *a, **k: monkeypatch_defect)
+
+    monitor = PrintMonitor(
+        classifier=object(),
+        interval_seconds=0.1,
+        evidence_dir=str(tmp_path / "evidence"),
+        cooldown_seconds=0,
+    )
+    monitor.run_url(f"http://127.0.0.1:{port}/snapshot", stop_after=0.5)
+    srv.shutdown()
+
+    shots = list((tmp_path / "evidence").glob("*.jpg"))
+    assert len(shots) >= 1

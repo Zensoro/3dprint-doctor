@@ -267,7 +267,7 @@ def check_batch(
 @app.command()
 def watch(
     source: str = typer.Argument(
-        ..., help="Camera index (0, 1, ...) or a directory to watch for new photos"
+        ..., help="Camera index (0,1,...), a directory, or an http(s) snapshot URL"
     ),
     interval: float = typer.Option(
         5.0, "-i", "--interval", help="Seconds between frame checks"
@@ -284,8 +284,10 @@ def watch(
     duration: float = typer.Option(
         None, "-d", "--duration", help="Stop after N seconds (for testing)"
     ),
+    user: str = typer.Option(None, "-u", "--user", help="Basic auth user (URL sources)"),
+    password: str = typer.Option(None, "-P", "--password", help="Basic auth password (URL sources)"),
 ) -> None:
-    """Monitor a camera or photo directory for print defects in real time."""
+    """Monitor a camera, photo directory, or webcam snapshot URL for print defects."""
     from print_doctor.monitor import PrintMonitor
 
     try:
@@ -297,6 +299,9 @@ def watch(
         )
         if source.isdigit():
             monitor.run_camera(int(source), stop_after=duration)
+        elif source.startswith(("http://", "https://")):
+            auth = (user, password) if user and password else None
+            monitor.run_url(source, stop_after=duration, auth=auth)
         else:
             monitor.run_directory(source, stop_after=duration)
     except Exception as e:
