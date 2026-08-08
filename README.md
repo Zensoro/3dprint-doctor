@@ -43,6 +43,15 @@ what went wrong?**
 | 👁 **During** | `print-doctor watch` | real-time defect alerts (camera / webcam URL) |
 | 🔍 **After** | `print-doctor diagnose` | ML photo diagnosis + root-cause fixes |
 
+## Showcase
+
+| | |
+|---|---|
+| **Check & quote** (before printing) | **Diagnose** (after a failure) |
+| <img src="docs/screenshots/check.svg" alt="print-doctor check" width="420"> | <img src="docs/screenshots/diagnose.svg" alt="print-doctor diagnose" width="420"> |
+| **Watch** (during printing) | |
+| <img src="docs/screenshots/watch.svg" alt="print-doctor watch" width="420"> | |
+
 ## Features
 
 ### Printability check (`check`)
