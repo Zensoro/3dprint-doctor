@@ -26,5 +26,7 @@ jobs:
         run: |
           python tests/generate_fixtures.py
           python tests/generate_diagnose_fixtures.py
-      - name: Run tests
+      - name: Run core tests
         run: pytest
+      - name: Run OctoPrint plugin tests
+        run: python -m unittest octoprint-print-doctor.tests.test_plugin

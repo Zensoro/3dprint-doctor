@@ -48,3 +48,7 @@ print-doctor = "print_doctor.cli:app"
 
 [tool.poetry.extras]
 vision = ["opencv-python-headless"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+norecursedirs = ["octoprint-print-doctor"]
