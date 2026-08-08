@@ -1,253 +1,192 @@
-# Print Doctor
+<div align="center">
 
-3D printing full-workflow assistant: pre-flight printability check, cost
-estimation, and post-print defect diagnosis from photos. Analyze STL/3MF
-models before you waste filament, quote prints for customers, and figure out
-what went wrong after a failed print.
+# 🩺 3DPrint Doctor
+
+**The complete 3D printing assistant — check, quote, monitor, and diagnose.**
+
+One CLI that covers a print's full lifecycle: pre-flight printability check
+and cost quoting, real-time defect monitoring while printing, and photo-based
+defect diagnosis after a failure.
+
+[![PyPI version](https://img.shields.io/pypi/v/print-doctor.svg?style=flat-square)](https://pypi.org/project/print-doctor/)
+[![PyPI downloads](https://img.shields.io/pypi/dm/print-doctor.svg?style=flat-square)](https://pypi.org/project/print-doctor/)
+[![CI](https://github.com/Zensoro/3dprint-doctor/actions/workflows/ci.yml/badge.svg)](https://github.com/Zensoro/3dprint-doctor/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg?style=flat-square)](https://www.python.org/)
+
+*Analyze STL/3MF models before you waste filament, quote prints for customers,
+catch failures while they happen, and figure out what went wrong after.*
+
+</div>
+
+---
+
+## Why you need it
+
+- **Netfabb shut down.** Autodesk retired its mesh-repair tool and there is no
+  modern free replacement for *printability pre-check* — until now.
+- **"Upload and print" fails.** Non-manifold meshes, thin walls, overhangs and
+  holes waste hours of print time and filament.
+- **Print shops quote by hand.** Weight, time, material, electricity and labor
+  estimated manually — slow and inconsistent.
+- **Failed prints stay a mystery.** Stringing? Warping? Z-band? New users stare
+  at a failed part and don't know which knob to turn.
+
+Print Doctor answers all three: **is this model printable? what does it cost?
+what went wrong?**
+
+## One CLI, three moments of a print
+
+| Moment | Command | What it does |
+|---|---|---|
+| 🛠 **Before** | `print-doctor check` | 8 printability checks, 0-100 score, cost quote |
+| 👁 **During** | `print-doctor watch` | real-time defect alerts (camera / webcam URL) |
+| 🔍 **After** | `print-doctor diagnose` | ML photo diagnosis + root-cause fixes |
 
 ## Features
 
-- **Printability check** — detects thin walls, overhangs, self-intersections,
-  non-watertight meshes, degenerate faces and inverted normals
-- **Printability score** — 0-100 weighted score based on detected issues
-- **Cost estimation** — weight, print time, material/electricity cost and
-  suggested retail price based on real print configuration
-- **Defect diagnosis** — photo-based detection of stringing, warping,
-  layer shift, under/over-extrusion and first-layer failure, with ranked
-  root causes + parameter fixes. Uses a trained ML classifier
-  (RandomForest over HOG/color features) that achieves ~0% false positives
-  and 90-100% per-class accuracy on real print photos
-- **Real-time monitoring** — `print-doctor watch` alerts on defects as they
-  happen (camera feed or watched photo directory), saving evidence
-  screenshots and optionally POSTing a webhook
-- **Reports** — Markdown and standalone HTML, saveable to file
-- **Batch analysis** — analyze directories of models with a comparison summary
-- **Shop pricing** — customer-facing HTML quote sheets (depreciation, labor,
-  waste) and machine-readable JSON output for print-shop integration
-- **Python API** — stable programmatic interface (`print_doctor.check`, ...)
-- **CLI exit codes** — critical issues exit non-zero, ready for CI integration
+### Printability check (`check`)
+Detects **non-watertight meshes, non-manifold edges, inverted normals,
+degenerate faces, thin walls (ray-cast), overhangs, self-intersections,
+isolated components and sliver triangles** — each with a severity level and an
+actionable fix. Outputs a 0-100 score.
 
-## Installation
+### Cost quoting (`check --quote`, `quote-sheet`)
+Full shop pricing: material, electricity, **machine depreciation, labor,
+waste allowance** and a suggested retail price. Emits Markdown, HTML, or
+machine-readable **JSON** — print-shop ready.
 
-Requires Python 3.11+. The diagnose feature needs OpenCV:
+### Real-time monitoring (`watch`)
+Samples a webcam, a watched directory, or a **Moonraker (Klipper) snapshot
+URL**, classifies each frame with ML, and alerts on defects — saving an
+evidence screenshot and optionally POSTing a webhook. Ships with an
+**OctoPrint plugin** (`octoprint-print-doctor/`) that can pause the print on
+defect.
+
+### Photo diagnosis (`diagnose`)
+Trained on **600 real photos** from 3D Printing StackExchange. Classifies
+stringing, warping, layer shift, under/over-extrusion and first-layer failure,
+then explains *why* and *what to change*. Measured: **0% false positives on
+healthy prints, 90-100% per-class accuracy.**
+
+### Shop & batch workflows
+- `check-batch` — analyze directories, sortable comparison table
+- `--json` — stable machine-readable schema (integration / APIs)
+- `quote-sheet` — customer-facing printable HTML quote
+- Exit codes for CI (critical issues → exit 1; defects → exit 2)
+
+## Quick start
 
 ```bash
 pip install print-doctor
-# or install with diagnosis support
-pip install print-doctor[vision]
 
-# from source with uv
-uv sync --group vision
-uv run print-doctor version
+# Check a model (printability score + cost estimate)
+print-doctor check model.stl
+
+# Diagnose a failed print from a photo
+print-doctor diagnose failed_print.jpg
+
+# Monitor your printer's webcam in real time
+print-doctor watch 0
 ```
 
-## Usage
+Requires Python 3.11+. Diagnosis needs OpenCV: `pip install print-doctor[vision]`.
+
+## How it compares
+
+| Capability | **Print Doctor** | Netfabb (retired) | Orca/Prusa slicers |
+|---|---|---|---|
+| Pre-print printability check | ✅ | ✅ (gone) | ⚠ basic |
+| Cost / shop quoting | ✅ | ❌ | ⚠ partial |
+| Real-time defect alerts | ✅ | ❌ | ❌ |
+| Photo defect diagnosis | ✅ | ❌ | ❌ |
+| Batch / API integration | ✅ | ❌ | ❌ |
+| Free & open source | ✅ | ❌ | ✅ |
+
+## Full usage
 
 ### Check a model
 
 ```bash
-# Basic analysis with cost estimation (PLA defaults)
-print-doctor check model.stl
-
-# Choose material and price
-print-doctor check model.stl -m PETG -p 30
-
-# Save report to file
-print-doctor check model.stl -o report.md
-
-# Skip cost estimation
-print-doctor check model.stl --no-cost
-
-# HTML report
-print-doctor check model.stl --html -o report.html
+print-doctor check model.stl                    # analysis + cost (PLA)
+print-doctor check model.stl -m PETG -p 30      # pick material/price
+print-doctor check model.stl -o report.md       # save report
+print-doctor check model.stl --html -o r.html   # HTML report
+print-doctor check model.stl --json             # machine-readable JSON
+print-doctor check model.stl --quote            # full shop pricing
 ```
 
-Exit code is `1` when the model has critical (error-level) issues, making it
-suitable for CI pipelines.
+Exit code `1` when the model has critical issues → CI friendly.
 
 ### Diagnose a failed print
 
 ```bash
-# Single photo
 print-doctor diagnose print_1.jpg
-
-# Multiple photos (top + side + close-up) with parameter hints
-print-doctor diagnose top.jpg side.jpg -m PLA --temperature 210 --retraction on
-
-# Save report
+print-doctor diagnose top.jpg side.jpg -m PLA --temperature 210
 print-doctor diagnose failed_print.jpg -o diagnosis.md
 ```
 
-Exit code is `2` when defects are detected, `1` on errors.
+Exit code `2` when defects are detected.
 
-Diagnosis uses a trained ML classifier by default. If the model file is
-missing, it falls back to traditional CV detectors (pass `--cv` to force
-the CV path).
-
-### Training / reproducing the classifier
-
-The classifier is trained on 600 real photos scraped from 3D Printing
-StackExchange (`data/stackexchange_manifest.json` has the image URLs with
-weak text-derived labels).
+### Monitor in real time
 
 ```bash
-# Download the dataset (needs gh auth for the "normal" class, and network
-# access to wsrv.nl which proxies imgur images)
-python scripts/fetch_dataset.py --out /tmp/dataset/stackexchange
-
-# Train the classifier (HOG + HSV color features -> RandomForest)
-python scripts/train_classifier.py --data /tmp/dataset/stackexchange --augment
-
-# Result lands in models/defect_classifier.pkl (gitignored)
+print-doctor watch 0                                      # webcam
+print-doctor watch ./snapshots -i 5                       # photo dir
+print-doctor watch "http://printer:7125/server/webcams/snapshot?name=webcam" \
+  -i 5 -e ./evidence -w https://hooks.example.com/alert   # Moonraker
 ```
 
-Measured on held-out test data: healthy-vs-defect 100% accurate, 0% false
-positives on healthy prints, 90-100% per-defect-class accuracy (weak labels
-mean results vary; more/cleaner data improves them).
-
-### Batch analysis
+### Quote for a customer
 
 ```bash
-# Analyze a directory of models
-print-doctor check-batch ./models/ -o summary.md
-
-# Explicit file list
-print-doctor check-batch model1.stl model2.3mf
-
-# With shop cost pricing and machine-readable JSON
-print-doctor check-batch ./models/ --quote --json -o summary.json
-```
-
-Prints a comparison table (score / issues / errors / volume) sorted by score.
-
-### Quote a print for a customer
-
-```bash
-# Full pricing (depreciation, labor, waste) in Markdown
-print-doctor check model.stl --quote
-
-# Machine-readable JSON (for shop systems / batch APIs)
-print-doctor check model.stl --json
-
-# Customer-facing printable HTML quote sheet
 print-doctor quote-sheet model.stl --shop "My Print Shop" \
   --customer "Alice" --quote-number Q-001 -o quote.html
 ```
 
-### Monitor a print in real time
+### Batch analysis
 
 ```bash
-# Watch a USB/web camera (index 0) and alert on defects
-print-doctor watch 0
-
-# Watch a directory where a camera saves snapshots (e.g. OctoPrint timelapse)
-print-doctor watch ./snapshots -i 5
-
-# Save evidence, POST alerts to a webhook, and cooldown between alerts
-print-doctor watch 0 -e ./evidence -w https://hooks.example.com/alert -c 120
+print-doctor check-batch ./models/ --quote --json -o summary.json
 ```
 
-On a defect it saves a timestamped evidence screenshot, prints an alert, and
-optionally POSTs JSON to a webhook:
-
-```json
-{"event": "print_defect", "defects": [{"type": "stringing", "confidence": 0.9}],
- "evidence_image": "evidence/defect_....jpg"}
-```
-
-### Print-farm integration
-
-Monitor a Moonraker (Klipper) webcam snapshot directly:
-
-```bash
-print-doctor watch "http://your-printer:7125/server/webcams/snapshot?name=webcam" \
-  -i 5 -e ./evidence -w http://notify.example.com/alert
-```
-
-For OctoPrint, see `octoprint-print-doctor/` for a plugin that starts
-monitoring on print start, shows alerts in a tab, and can pause the print on
-defect.
-
-### Python API
+## Python API
 
 ```python
 from print_doctor import check, estimate_cost, diagnose
-from print_doctor.models import PrintConfig
 
-analysis = check("model.stl")          # MeshAnalysis
+analysis = check("model.stl")                    # MeshAnalysis
 est = estimate_cost(14.6, PrintConfig(material_type="PLA"), 25.0, 0.12, 200.0)
 diag = diagnose(["photo.jpg"], hints={"material": "PLA"})
 ```
 
-### Supported file formats
+## Reproducing the ML classifier
 
-- STL (stereolithography)
-- 3MF (3D Manufacturing Format)
-
-### Materials
-
-PLA, PETG, ABS, TPU, Nylon — with built-in density and default price tables
-(see `config/materials.yaml` and `src/print_doctor/cost.py`).
-
-## Cost model calibration
-
-The weight estimate models solid outer perimeters plus partial infill via a
-`shell_factor` (default 0.5, calibrated against a 3DBenchy at 20% infill /
-3 perimeters: estimated 10.9g vs ~11g measured). Print time uses a volumetric
-flow model with a 1.3x overhead factor.
-
-For exact calibration against your printer and OrcaSlicer profile, run:
+Trained on 600 real photos (URLs + weak labels in
+`data/stackexchange_manifest.json`):
 
 ```bash
-python scripts/calibrate.py models/benchy.stl models/other.stl
+python scripts/fetch_dataset.py --out /tmp/dataset/stackexchange
+python scripts/train_classifier.py --data /tmp/dataset/stackexchange --augment
 ```
 
-This slices each model with OrcaSlicer's CLI and prints a comparison table of
-estimated vs sliced time and weight, so you can tune `shell_factor` and the
-flow model to your setup.
+Healthy-vs-defect detection is ~100% accurate with 0% false positives;
+per-defect-class accuracy 90-100% (weak labels → more/cleaner data improves it).
 
-## Example output
+## Print-farm integration
 
-```markdown
-# Print Doctor Report: model.stl
-
-## Printability Score: 85.0/100
-
-## Mesh Information
-- **Watertight:** yes
-- **Manifold:** yes
-- **Triangles:** 1,234
-- **Volume:** 12.34 cm3
-- **Surface Area:** 45.67 cm2
-- **Bounding Box:** 10.0 x 20.0 x 30.0 mm
-
-## Issues Found
-
-### [WARNING] thin_wall
-- **Description:** Found thin wall regions: 45/500 sample points (9.0%) ...
-- **Location:** 9.0% of sampled surface
-- **Suggestion:** Increase wall thickness to at least 0.80mm ...
-
-## Cost Estimate
-- **Weight:** 15.3g
-- **Print Time:** 1.2 hours
-- **Material Cost:** $0.38
-- **Electricity Cost:** $0.03
-- **Total Cost:** $0.41
-- **Suggested Price:** $0.82
-```
+- **OctoPrint** — see `octoprint-print-doctor/` for a plugin (monitor on print
+  start, tab alerts, optional pause-on-defect).
+- **Klipper / Moonraker** — point `watch` at the webcam snapshot URL (see
+  `octoprint-print-doctor/README.md`).
 
 ## Development
 
 ```bash
-poetry install --with dev
-poetry run pytest
-```
-
-Generate E2E fixture models:
-
-```bash
-python tests/generate_fixtures.py
+uv sync --group vision
+uv run pytest
+uv run python tests/generate_fixtures.py
+uv run python tests/generate_diagnose_fixtures.py
 ```
 
 ## License
