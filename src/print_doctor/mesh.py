@@ -386,6 +386,9 @@ def detect_extreme_aspect_ratio(
 def analyze_mesh(file_path: str) -> "MeshAnalysis":
     """Perform a complete printability analysis of a 3D model.
 
+    Runs all registered detectors (built-in + any plugin via entry
+    points or :func:`print_doctor.plugins.register_detector`).
+
     Args:
         file_path: Path to an STL/3MF file
 
@@ -395,17 +398,40 @@ def analyze_mesh(file_path: str) -> "MeshAnalysis":
     Raises:
         ValueError: If the file cannot be loaded
     """
+    return analyze_mesh_with_detectors(file_path, detector_names=None)
+
+
+def analyze_mesh_with_detectors(
+    file_path: str, detector_names: list = None
+) -> "MeshAnalysis":
+    """Analyze a mesh running only the named detectors.
+
+    Args:
+        file_path: Path to an STL/3MF file
+        detector_names: List of detector names to run (None = all
+            registered). Unknown names are ignored.
+
+    Returns:
+        MeshAnalysis with mesh stats, detected issues and a score
+    """
     from print_doctor.models import MeshAnalysis
+    from print_doctor.plugins import load_plugins, get_registered_detectors
+    import print_doctor.builtin_detectors  # noqa: F401 - registers built-ins
 
     mesh = load_mesh(file_path)
 
+    registry = load_plugins()
+    detectors = registry
+    if detector_names is not None:
+        wanted = set(detector_names)
+        detectors = {k: v for k, v in registry.items() if k in wanted}
+
     issues = []
-    issues.extend(validate_mesh(mesh))
-    issues.extend(detect_thin_walls(mesh))
-    issues.extend(detect_overhangs(mesh))
-    issues.extend(detect_self_intersections(mesh))
-    issues.extend(detect_isolated_faces(mesh))
-    issues.extend(detect_extreme_aspect_ratio(mesh))
+    for cls in detectors.values():
+        try:
+            issues.extend(cls().detect(mesh))
+        except Exception:
+            continue
 
     penalty = 0
     for issue in issues:

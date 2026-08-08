@@ -34,12 +34,20 @@ def check(
     no_cost: bool = typer.Option(
         False, "--no-cost", help="Skip cost estimation"
     ),
+    detectors: List[str] = typer.Option(
+        None, "-D", "--detector", help="Run only these detectors (repeatable). "
+        "List available: print-doctor detectors"
+    ),
 ) -> None:
     """Analyze a 3D model for printability issues."""
     try:
         if not json:
             console.print(f"[bold blue]Analyzing {model_path}...[/bold blue]")
-        analysis = analyze_mesh(model_path)
+        if detectors:
+            from print_doctor.mesh import analyze_mesh_with_detectors
+            analysis = analyze_mesh_with_detectors(model_path, detectors)
+        else:
+            analysis = analyze_mesh(model_path)
 
         estimate = None
         if not no_cost and analysis.volume > 0:
@@ -170,6 +178,17 @@ def version() -> None:
     """Print version information."""
     from print_doctor import __version__
     console.print(f"Print Doctor v{__version__}")
+
+
+@app.command()
+def detectors() -> None:
+    """List all registered (built-in + plugin) detectors."""
+    from print_doctor.plugins import load_plugins, get_registered_detectors
+    import print_doctor.builtin_detectors  # noqa: F401
+
+    registry = load_plugins()
+    for name in sorted(registry):
+        console.print(f"  {name}")
 
 
 @app.command()

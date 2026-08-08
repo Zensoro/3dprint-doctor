@@ -11,6 +11,12 @@ __version__ = "0.6.0"
 from print_doctor.mesh import analyze_mesh as check
 from print_doctor.cost import calculate_cost as estimate_cost
 from print_doctor.diagnose import diagnose_photos as diagnose
+from print_doctor.plugins import (
+    MeshDetector,
+    register_detector,
+    get_registered_detectors,
+    load_plugins,
+)
 from print_doctor.models import (
     Severity,
     Issue,
@@ -27,6 +33,10 @@ __all__ = [
     "check",
     "estimate_cost",
     "diagnose",
+    "MeshDetector",
+    "register_detector",
+    "get_registered_detectors",
+    "load_plugins",
     "Severity",
     "Issue",
     "MeshAnalysis",

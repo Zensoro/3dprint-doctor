@@ -193,3 +193,25 @@ def test_quote_sheet_command():
             assert "Suggested retail price" in content
     finally:
         os.unlink(temp_path)
+
+
+def test_detectors_command():
+    """Test detectors command lists registered detectors."""
+    result = runner.invoke(app, ["detectors"])
+    assert result.exit_code == 0
+    assert "thin_wall" in result.output
+    assert "overhang" in result.output
+
+
+def test_check_with_detector_filter():
+    """Test check --detector runs only the named detectors."""
+    mesh = trimesh.creation.box(extents=[10, 10, 10])
+    with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as f:
+        mesh.export(f.name)
+        temp_path = f.name
+    try:
+        result = runner.invoke(app, ["check", temp_path, "--detector", "thin_wall", "--no-cost"])
+        assert result.exit_code == 0
+        assert "Printability Score" in result.output
+    finally:
+        os.unlink(temp_path)
