@@ -72,3 +72,21 @@ best prediction must match the label):
 - **More data** — especially cleaner labels (verify images match their class).
 - **Camera-matched data** — photos from your setup for transfer.
 - **Retrain periodically** as the dataset grows.
+
+## Experiment log: vision-model label cleaning (2026-08-08)
+
+We audited all 815 weak-labeled images with the OpenCode Go MiMo-V2.5 vision
+model (`scripts/audit_labels.py`, endpoint `zen/go/v1`), asking whether each
+photo actually shows its labeled defect:
+
+- **474 match** (kept), **341 mismatch** (moved to `_rejected/`, kept not deleted)
+- 0% API errors across the run
+- Reject rate ~42% — confirms heavy weak-label noise.
+
+**Result: cleaning did NOT improve top-1 accuracy** (0.304 original vs 0.287
+cleaned). The bottleneck is not label noise but feature expressiveness: HOG +
+color features cannot separate the classes even on visually-verified images,
+because the classes are too similar in pixel space. Cleaning is still worth
+keeping (cleaner data, honest labels), but real gains require a stronger
+feature representation (deep learning), which is beyond this project's current
+resources.

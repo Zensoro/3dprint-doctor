@@ -56,3 +56,18 @@ retrain. See [Training](training.md).
 !!! warning
     Weak labels mean results vary. More data, and *cleaner* labels (photos
     verified to match), improve accuracy directly.
+
+## Vision-model label audit
+
+Weak labels can be noisy. `scripts/audit_labels.py` uses a vision model
+(OpenCode Go MiMo-V2.5, via `zen/go/v1`) to check each photo against its label
+and moves clearly mismatched images out of the training set (into
+`<data>/_rejected/` — kept, not deleted). Results are logged to a CSV for human
+review.
+
+```bash
+python scripts/audit_labels.py --data /tmp/dataset/stackexchange \
+    --model mimo-v2.5 --out /tmp/cleaned.csv
+```
+
+The script is resumable: interrupted runs continue from the existing CSV.
