@@ -1,0 +1,28 @@
+<h3>Print Doctor monitoring</h3>
+<form class="form-horizontal">
+  <div class="control-group">
+    <label class="control-label">Webcam snapshot URL</label>
+    <div class="controls">
+      <input type="text" class="input-block-level"
+             data-bind="value: settings.plugins.print_doctor.snapshot_url">
+      <span class="help-inline">URL returning a JPEG (webcam snapshot)</span>
+    </div>
+  </div>
+  <div class="control-group">
+    <label class="control-label">Check interval (s)</label>
+    <div class="controls">
+      <input type="number" class="input-mini"
+             data-bind="value: settings.plugins.print_doctor.interval">
+    </div>
+  </div>
+  <div class="control-group">
+    <label class="control-label">Pause on defect</label>
+    <div class="controls">
+      <label class="checkbox">
+        <input type="checkbox"
+               data-bind="checked: settings.plugins.print_doctor.pause_on_defect">
+        Pause the print when a defect is detected
+      </label>
+    </div>
+  </div>
+</form>

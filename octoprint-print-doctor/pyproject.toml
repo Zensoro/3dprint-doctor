@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=42"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["octoprint_print_doctor"]
+
+[project]
+name = "octoprint-print-doctor"
+version = "0.1.0"
+description = "Real-time print defect monitoring for OctoPrint using Print Doctor"
+authors = [{name = "Zensoro"}]
+license = {text = "MIT"}
+requires-python = ">=3.8"
+dependencies = [
+    "OctoPrint>=1.8.0",
+    "print-doctor>=0.5.0",
+    "opencv-python-headless>=4.6",
+    "requests>=2.20",
+]
