@@ -108,7 +108,7 @@ def test_diagnose_command_help():
 def test_diagnose_command_with_photo():
     """Test diagnose with a defect photo exits with code 2."""
     photo = Path(__file__).parent / "fixtures" / "diagnose" / "stringing.jpg"
-    result = runner.invoke(app, ["diagnose", str(photo)])
+    result = runner.invoke(app, ["diagnose", "--cv", str(photo)])
     assert result.exit_code == 2
     assert "stringing" in result.output
 
@@ -116,7 +116,7 @@ def test_diagnose_command_with_photo():
 def test_diagnose_clean_photo_exit_zero():
     """Test diagnose with a clean photo exits zero."""
     photo = Path(__file__).parent / "fixtures" / "diagnose" / "normal.jpg"
-    result = runner.invoke(app, ["diagnose", str(photo)])
+    result = runner.invoke(app, ["diagnose", "--cv", str(photo)])
     assert result.exit_code == 0
 
 

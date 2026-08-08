@@ -79,6 +79,7 @@ def diagnose(
     material: str = typer.Option(None, "--material", help="Material hint (PLA/PETG/ABS/TPU)"),
     temperature: str = typer.Option(None, "--temperature", help="Nozzle temperature hint, e.g. 210"),
     retraction: str = typer.Option(None, "--retraction", help="Retraction hint: on/off"),
+    cv: bool = typer.Option(False, "--cv", help="Use traditional CV detectors instead of the ML classifier"),
 ) -> None:
     """Diagnose a printed part from photos (stringing, warping, ...)."""
     try:
@@ -90,7 +91,7 @@ def diagnose(
         if retraction:
             hints["retraction"] = retraction
 
-        diagnosis = diagnose_photos(photos, hints=hints)
+        diagnosis = diagnose_photos(photos, hints=hints, use_ml=not cv)
         report = generate_diagnosis_report(diagnosis)
 
         if output:

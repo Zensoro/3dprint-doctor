@@ -3,18 +3,35 @@ from typing import List, Dict, Optional
 from pathlib import Path
 
 from print_doctor.models import Diagnosis, Defect
-from print_doctor.vision import (
-    load_image,
-    preprocess,
-    ALL_DETECTORS,
-)
+from print_doctor.vision import load_image
 from print_doctor.attribution import attribute_causes
+
+
+def _detect_on_image(img, use_ml: bool, classifier):
+    """Run the defect detectors on a single image.
+
+    Prefers the trained ML classifier when available (more reliable
+    on real photos); falls back to the traditional CV detectors.
+    """
+    if use_ml and classifier is not None:
+        from print_doctor.vision_ml import classify_photo
+        return classify_photo(img, classifier=classifier)
+    from print_doctor.vision import preprocess, ALL_DETECTORS
+    gray, mask = preprocess(img)
+    defects = []
+    for detector in ALL_DETECTORS:
+        try:
+            defects.extend(detector(img, mask))
+        except Exception:
+            continue
+    return defects
 
 
 def diagnose_photos(
     image_paths: List[str],
     hints: Optional[Dict[str, str]] = None,
     filenames: Optional[List[str]] = None,
+    use_ml: bool = True,
 ) -> Diagnosis:
     """Diagnose a printed part from one or more photos.
 
@@ -24,23 +41,27 @@ def diagnose_photos(
             {"material": "pla", "layer_height": "0.2",
              "temperature": "210", "retraction": "on"}
         filenames: Optional display name (defaults to first image name)
+        use_ml: Prefer the trained ML classifier (recommended). Falls
+            back to traditional CV if the model file is missing.
 
     Returns:
         Diagnosis with defects and ranked root causes
     """
     hints = hints or {}
-    all_defects: List[Defect] = []
 
+    # Try to load the ML classifier (best on real photos)
+    classifier = None
+    if use_ml:
+        try:
+            from print_doctor.vision_ml import DefectClassifier
+            classifier = DefectClassifier()
+        except Exception:
+            classifier = None
+
+    all_defects: List[Defect] = []
     for path in image_paths:
         img = load_image(str(path))
-        gray, mask = preprocess(img)
-        for detector in ALL_DETECTORS:
-            try:
-                defects = detector(img, mask)
-                all_defects.extend(defects)
-            except Exception:
-                # A failing detector on one image should not kill the run
-                continue
+        all_defects.extend(_detect_on_image(img, use_ml, classifier))
 
     # De-duplicate: keep the highest confidence for each defect type
     best: Dict[str, Defect] = {}
