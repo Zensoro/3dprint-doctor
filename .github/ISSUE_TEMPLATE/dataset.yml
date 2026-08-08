@@ -1,0 +1,13 @@
+name: Dataset contribution
+description: Add labeled images to improve the defect classifier
+title: "[Data] "
+labels: ["dataset"]
+body:
+  - type: textarea
+    id: images
+    attributes:
+      label: Image URLs
+      description: List of direct image URLs with their defect class
+      placeholder: "stringing: https://... , https://...\nwarping: https://..."
+    validations:
+      required: true
