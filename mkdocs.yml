@@ -1,0 +1,58 @@
+site_name: 3DPrint Doctor
+site_description: 3D printing full-workflow assistant - printability check, cost quoting, real-time monitoring, ML defect diagnosis
+site_url: https://Zensoro.github.io/3dprint-doctor/
+repo_url: https://github.com/Zensoro/3dprint-doctor
+repo_name: 3dprint-doctor
+edit_uri: blob/main/docs/
+
+theme:
+  name: material
+  features:
+    - navigation.top
+    - navigation.tabs
+    - navigation.sections
+    - toc.integrate
+    - search.suggest
+  palette:
+    - scheme: default
+      primary: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+nav:
+  - Home: index.md
+  - Quick Start: quickstart.md
+  - CLI Reference: cli.md
+  - How It Works:
+      - Printability Checks: algorithms.md
+      - Defect Diagnosis: diagnosis.md
+      - Cost Model: cost.md
+  - Data & Models:
+      - Dataset: dataset.md
+      - Training: training.md
+  - Python API: api.md
+  - Integrations:
+      - OctoPrint: octoprint.md
+      - Klipper / Moonraker: moonraker.md
+  - FAQ: faq.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.superfences
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - toc:
+      permalink: true
+
+plugins:
+  - search
