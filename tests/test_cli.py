@@ -169,3 +169,27 @@ def test_check_quote_full_pricing():
         assert "Waste Allowance" in content
     finally:
         os.unlink(temp_path)
+
+
+def test_quote_sheet_command():
+    """Test quote-sheet generates customer HTML with shop info."""
+    mesh = trimesh.creation.box(extents=[10, 10, 10])
+    with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as f:
+        mesh.export(f.name)
+        temp_path = f.name
+    try:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out = os.path.join(tmpdir, "quote.html")
+            result = runner.invoke(app, [
+                "quote-sheet", temp_path, "-o", out,
+                "--shop", "Test Shop", "--customer", "Bob",
+                "--quote-number", "Q-9",
+            ])
+            assert result.exit_code == 0
+            content = Path(out).read_text()
+            assert "Test Shop" in content
+            assert "Bob" in content
+            assert "Q-9" in content
+            assert "Suggested retail price" in content
+    finally:
+        os.unlink(temp_path)

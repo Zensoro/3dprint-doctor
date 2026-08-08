@@ -122,6 +122,50 @@ def diagnose(
 
 
 @app.command()
+def quote_sheet(
+    model_path: str = typer.Argument(..., help="Path to STL/3MF file"),
+    output: str = typer.Option("quote.html", "-o", "--output", help="Output HTML path"),
+    shop: str = typer.Option("Print Doctor Shop", "--shop", help="Shop name"),
+    contact: str = typer.Option("", "--contact", help="Shop contact info"),
+    customer: str = typer.Option("", "--customer", help="Customer name"),
+    quote_number: str = typer.Option("", "--quote-number", help="Quote reference"),
+    notes: str = typer.Option("", "--notes", help="Free-text notes"),
+    material: str = typer.Option("PLA", "-m", "--material", help="Material type"),
+    price_per_kg: float = typer.Option(None, "-p", "--price", help="Material price per kg"),
+) -> None:
+    """Generate a customer-facing HTML quote sheet."""
+    from print_doctor.cost import MATERIAL_PRICES, calculate_cost
+    from print_doctor.models import PrintConfig, QuoteConfig
+    from print_doctor.quote_sheet import generate_quote_sheet
+
+    try:
+        analysis = analyze_mesh(model_path)
+        price = price_per_kg if price_per_kg is not None else (
+            MATERIAL_PRICES.get(material.upper(), 25.0)
+        )
+        estimate = None
+        if analysis.volume > 0:
+            estimate = calculate_cost(
+                volume_cm3=analysis.volume / 1000.0,
+                config=PrintConfig(material_type=material),
+                material_price_per_kg=price,
+                electricity_price_per_kwh=0.12,
+                machine_power_watts=200.0,
+                quote=QuoteConfig(),
+            )
+        html = generate_quote_sheet(
+            analysis, estimate,
+            shop_name=shop, shop_contact=contact,
+            customer=customer, quote_number=quote_number, notes=notes,
+        )
+        Path(output).write_text(html)
+        console.print(f"[bold green]Quote sheet saved to {output}[/bold green]")
+    except Exception as e:
+        console.print(f"[bold red]Error: {e}[/bold red]")
+        raise typer.Exit(code=1)
+
+
+@app.command()
 def version() -> None:
     """Print version information."""
     from print_doctor import __version__
@@ -132,9 +176,14 @@ def version() -> None:
 def check_batch(
     models: List[str] = typer.Argument(..., help="Model files or directories"),
     output: str = typer.Option(None, "-o", "--output", help="Output summary path (md)"),
+    json: bool = typer.Option(False, "--json", help="Output machine-readable JSON"),
+    quote: bool = typer.Option(False, "--quote", help="Include shop cost pricing"),
     material: str = typer.Option("PLA", "-m", "--material", help="Material type"),
 ) -> None:
     """Analyze multiple models and print a comparison summary."""
+    from print_doctor.cost import MATERIAL_PRICES, calculate_cost
+    from print_doctor.models import PrintConfig, QuoteConfig, Severity
+
     paths: List[Path] = []
     for m in models:
         p = Path(m)
@@ -147,35 +196,70 @@ def check_batch(
         console.print("[bold red]No model files found[/bold red]")
         raise typer.Exit(code=1)
 
+    price = MATERIAL_PRICES.get(material.upper(), 25.0)
     results = []
     for p in paths:
         try:
             analysis = analyze_mesh(str(p))
-            results.append((p.name, analysis))
+            estimate = None
+            if quote and analysis.volume > 0:
+                estimate = calculate_cost(
+                    volume_cm3=analysis.volume / 1000.0,
+                    config=PrintConfig(material_type=material),
+                    material_price_per_kg=price,
+                    electricity_price_per_kwh=0.12,
+                    machine_power_watts=200.0,
+                    quote=QuoteConfig(),
+                )
+            results.append((p.name, analysis, estimate))
         except Exception as e:
             console.print(f"[yellow]Skipped {p.name}: {e}[/yellow]")
 
-    from print_doctor.models import Severity
-
-    lines = ["# Print Doctor Batch Summary", ""]
-    lines.append("| Model | Score | Issues | Errors | Volume (cm3) |")
-    lines.append("|---|---|---|---|---|")
-    for name, a in sorted(results, key=lambda r: r[1].score):
-        errors = sum(1 for i in a.issues if i.severity == Severity.ERROR)
-        lines.append(
-            f"| {name} | {a.score:.1f} | {len(a.issues)} | {errors} "
-            f"| {a.volume / 1000.0:.1f} |"
-        )
-    lines.append("")
-
-    summary = "\n".join(lines)
-    if output:
-        Path(output).write_text(summary)
-        console.print(f"[bold green]Summary saved to {output}[/bold green]")
+    if json:
+        import json as _json
+        data = {"models": []}
+        for name, a, est in sorted(results, key=lambda r: r[1].score):
+            item = {
+                "filename": name,
+                "printability_score": round(a.score, 2),
+                "issues": len(a.issues),
+                "errors": sum(1 for i in a.issues if i.severity == Severity.ERROR),
+                "volume_cm3": round(a.volume / 1000.0, 3),
+            }
+            if est is not None:
+                item["cost"] = {
+                    "total_cost": round(est.total_cost, 4),
+                    "suggested_price": round(est.suggested_price, 4),
+                }
+            data["models"].append(item)
+        payload = _json.dumps(data, indent=2)
+        if output:
+            Path(output).write_text(payload)
+            console.print(f"[bold green]Summary saved to {output}[/bold green]")
+        else:
+            print(payload)
     else:
-        console.print(summary)
+        lines = ["# Print Doctor Batch Summary", ""]
+        header = "| Model | Score | Issues | Errors | Volume (cm3) |"
+        if quote:
+            header += " Total Cost | Suggested Price |"
+        lines.append(header)
+        lines.append("|---|---|---|---|---" + ("|---|" if quote else "") + "|")
+        for name, a, est in sorted(results, key=lambda r: r[1].score):
+            errors = sum(1 for i in a.issues if i.severity == Severity.ERROR)
+            row = f"| {name} | {a.score:.1f} | {len(a.issues)} | {errors} | {a.volume / 1000.0:.1f} |"
+            if est is not None:
+                row += f" ${est.total_cost:.2f} | ${est.suggested_price:.2f} |"
+            lines.append(row)
+        lines.append("")
+        summary = "\n".join(lines)
+        if output:
+            Path(output).write_text(summary)
+            console.print(f"[bold green]Summary saved to {output}[/bold green]")
+        else:
+            console.print(summary)
 
-    worst = min((a for _, a in results), key=lambda a: a.score, default=None)
+    worst = min((r[1] for r in results), key=lambda a: a.score, default=None)
     if worst and any(i.severity == Severity.ERROR for i in worst.issues):
         raise typer.Exit(code=1)
 
