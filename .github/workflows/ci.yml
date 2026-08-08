@@ -20,7 +20,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest trimesh numpy typer rich rtree scipy manifold3d opencv-python-headless
+          pip install pytest trimesh numpy typer rich rtree scipy scikit-learn manifold3d opencv-python-headless
           pip install -e .
       - name: Generate test fixtures
         run: |
