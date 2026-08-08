@@ -17,6 +17,9 @@ what went wrong after a failed print.
   root causes + parameter fixes. Uses a trained ML classifier
   (RandomForest over HOG/color features) that achieves ~0% false positives
   and 90-100% per-class accuracy on real print photos
+- **Real-time monitoring** — `print-doctor watch` alerts on defects as they
+  happen (camera feed or watched photo directory), saving evidence
+  screenshots and optionally POSTing a webhook
 - **Reports** — Markdown and standalone HTML, saveable to file
 - **Batch analysis** — analyze directories of models with a comparison summary
 - **Shop pricing** — customer-facing HTML quote sheets (depreciation, labor,
@@ -130,6 +133,22 @@ print-doctor check model.stl --json
 print-doctor quote-sheet model.stl --shop "My Print Shop" \
   --customer "Alice" --quote-number Q-001 -o quote.html
 ```
+
+### Monitor a print in real time
+
+```bash
+# Watch a USB/web camera (index 0) and alert on defects
+print-doctor watch 0
+
+# Watch a directory where a camera saves snapshots (e.g. OctoPrint timelapse)
+print-doctor watch ./snapshots -i 5
+
+# Save evidence, POST alerts to a webhook, and cooldown between alerts
+print-doctor watch 0 -e ./evidence -w https://hooks.example.com/alert -c 120
+```
+
+On a defect it saves a timestamped evidence screenshot, prints an alert, and
+optionally POSTs JSON to a webhook:
 
 ### Python API
 
