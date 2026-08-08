@@ -264,5 +264,45 @@ def check_batch(
         raise typer.Exit(code=1)
 
 
+@app.command()
+def watch(
+    source: str = typer.Argument(
+        ..., help="Camera index (0, 1, ...) or a directory to watch for new photos"
+    ),
+    interval: float = typer.Option(
+        5.0, "-i", "--interval", help="Seconds between frame checks"
+    ),
+    evidence: str = typer.Option(
+        "evidence", "-e", "--evidence-dir", help="Directory for evidence screenshots"
+    ),
+    cooldown: float = typer.Option(
+        60.0, "-c", "--cooldown", help="Seconds to wait before re-alerting same defect"
+    ),
+    webhook: str = typer.Option(
+        None, "-w", "--webhook", help="POST a JSON alert to this URL on defect"
+    ),
+    duration: float = typer.Option(
+        None, "-d", "--duration", help="Stop after N seconds (for testing)"
+    ),
+) -> None:
+    """Monitor a camera or photo directory for print defects in real time."""
+    from print_doctor.monitor import PrintMonitor
+
+    try:
+        monitor = PrintMonitor(
+            interval_seconds=interval,
+            evidence_dir=evidence,
+            cooldown_seconds=cooldown,
+            webhook=webhook,
+        )
+        if source.isdigit():
+            monitor.run_camera(int(source), stop_after=duration)
+        else:
+            monitor.run_directory(source, stop_after=duration)
+    except Exception as e:
+        console.print(f"[bold red]Error: {e}[/bold red]")
+        raise typer.Exit(code=1)
+
+
 if __name__ == "__main__":
     app()
