@@ -6,8 +6,8 @@ authors = ["Zensoro"]
 license = "MIT"
 readme = "README.md"
 packages = [{include = "print_doctor", from = "src"}]
-homepage = "https://github.com/Zensoro/print-doctor"
-repository = "https://github.com/Zensoro/print-doctor"
+homepage = "https://github.com/Zensoro/3dprint-doctor"
+repository = "https://github.com/Zensoro/3dprint-doctor"
 keywords = ["3d-printing", "stl", "3mf", "mesh-analysis", "cost-estimation"]
 classifiers = [
     "Development Status :: 4 - Beta",

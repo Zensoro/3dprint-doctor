@@ -1,7 +1,7 @@
 # OctoPrint-PrintDoctor
 
 OctoPrint plugin for real-time print defect monitoring using
-[Print Doctor](https://github.com/Zensoro/print-doctor). Detects stringing,
+[Print Doctor](https://github.com/Zensoro/3dprint-doctor). Detects stringing,
 warping, layer shift, under/over-extrusion and first-layer failure while the
 print runs, alerts in the UI, and can pause the print.
 
