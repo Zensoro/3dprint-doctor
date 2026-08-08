@@ -7,10 +7,10 @@ explains the root causes and what to change.
 
 Diagnosis is deliberately two-tier:
 
-1. **Healthy vs defective** — near-perfect (~100% accuracy, 0% false positives
-   on healthy prints).
-2. **Which defect** — a 6-class classifier (90-100% per-class accuracy on real
-   photos).
+1. **Healthy vs defective** — reliable (~100% accuracy, 0% false positives on
+   healthy prints).
+2. **Which defect** — a 6-class classifier, still prototype-grade: strict
+   top-1 accuracy ~0.3 (unaugmented) / ~0.5 (augmented) on weak-labeled data.
 
 The classifier is a RandomForest over hand-crafted features:
 

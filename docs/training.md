@@ -51,16 +51,21 @@ Features per image:
 
 ## Measured performance
 
+Honest numbers from 5-fold cross-validation (strict top-1, where the single
+best prediction must match the label):
+
 | Metric | Value |
 |---|---|
-| Healthy vs defect | ~100% accuracy |
-| False positives (healthy) | 0% |
-| Per-class accuracy (6 classes) | 90-100% |
-| Augmented 7-class test accuracy | ~0.67 |
+| Healthy vs defect | ~100% accuracy, 0% false positives |
+| Which-defect, unaugmented | ~0.30 top-1 |
+| Which-defect, augmented | ~0.50 top-1 |
+| Dataset size | 815 images, 7 classes (weak labels) |
 
-!!! note
-    Accuracy is on the weak-labeled StackExchange data. Real-world performance
-    varies with camera/lighting similarity to the training set.
+!!! warning
+    Labels are derived from forum post text and are *not verified against each
+    image* — a significant share are noisy. `scripts/audit_dataset.py` outputs
+    a CSV of suspect samples for human review. Treat the defect type prediction
+    as a ranked candidate, not ground truth.
 
 ## Improving accuracy
 

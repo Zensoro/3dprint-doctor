@@ -73,10 +73,16 @@ evidence screenshot and optionally POSTing a webhook. Ships with an
 defect.
 
 ### Photo diagnosis (`diagnose`)
-Trained on **600 real photos** from 3D Printing StackExchange. Classifies
+Trained on real photos scraped from 3D Printing StackExchange. Classifies
 stringing, warping, layer shift, under/over-extrusion and first-layer failure,
-then explains *why* and *what to change*. Measured: **0% false positives on
-healthy prints, 90-100% per-class accuracy.**
+then explains *why* and *what to change*.
+
+**Honest status:** healthy-vs-defect detection is reliable (~100% accuracy, 0%
+false positives on healthy prints). Classifying *which specific defect* is
+still prototype-grade: strict top-1 accuracy is ~0.3 (unaugmented) / ~0.5
+(data-augmented), because the training labels are **weak** — derived from forum
+post text, not verified against each image. Treat the defect type as a ranked
+candidate, not ground truth.
 
 ### Shop & batch workflows
 - `check-batch` — analyze directories, sortable comparison table
@@ -179,8 +185,11 @@ python scripts/fetch_dataset.py --out /tmp/dataset/stackexchange
 python scripts/train_classifier.py --data /tmp/dataset/stackexchange --augment
 ```
 
-Healthy-vs-defect detection is ~100% accurate with 0% false positives;
-per-defect-class accuracy 90-100% (weak labels → more/cleaner data improves it).
+**Measured honestly** (5-fold CV, strict top-1): healthy-vs-defect ~100% (0%
+false positives); which-defect ~0.3 unaugmented / ~0.5 augmented. Labels are
+weak (forum-text-derived) and partly noisy — `scripts/audit_dataset.py` lists
+suspect samples for human review. Accuracy improves with cleaner labels, not
+just more images.
 
 ## Print-farm integration
 

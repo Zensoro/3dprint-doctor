@@ -1,6 +1,6 @@
 # Dataset
 
-The defect classifier is trained on **600 real photos** with **weak labels**.
+The defect classifier is trained on **815 real photos** with **weak labels**.
 
 ## Source
 
@@ -8,7 +8,7 @@ Images were scraped from [3D Printing StackExchange](https://3dprinting.stackexc
 posts. A photo is labeled by the defect keywords in the surrounding post text —
 hence *weak* labels: the image may not perfectly show the defect mentioned.
 
-The 600-image manifest is in `data/stackexchange_manifest.json` — URLs plus the
+The 815-image manifest is in `data/stackexchange_manifest.json` — URLs plus the
 class label derived from post text. The "normal" class (94 healthy prints)
 comes from the `elasly/3D_Printing_Defect_Detection` GitHub repository.
 
@@ -16,13 +16,21 @@ comes from the `elasly/3D_Printing_Defect_Detection` GitHub repository.
 
 | Class | Images |
 |---|---|
-| first_layer | 219 |
+| first_layer | 287 |
+| under_extrusion | 155 |
+| stringing | 127 |
 | normal | 94 |
-| under_extrusion | 89 |
-| warping | 71 |
-| stringing | 68 |
-| over_extrusion | 31 |
+| warping | 78 |
+| over_extrusion | 46 |
 | layer_shift | 28 |
+
+## Label quality (honest)
+
+Weak labels are noisy. An audit (`scripts/audit_dataset.py`) found that a large
+share of samples are suspect — either predicted class disagrees with the label
+or confidence is low. **More images do not automatically mean better**: broader
+keyword scraping adds quantity and noise together. The path to a *good*
+classifier is verified (clean) labels, not just volume.
 
 ## Download
 

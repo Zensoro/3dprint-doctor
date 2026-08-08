@@ -17,9 +17,11 @@ you configure one).
 
 ## How accurate is defect diagnosis?
 
-On real photos: healthy-vs-defect ~100% (0% false positives), 90-100% per-class
-accuracy on the 6 defect classes. Labels are weak (derived from forum text), so
-results vary with how similar your photos are to the training data.
+Honestly: **healthy-vs-defect is reliable (~100%, 0% false positives). Which
+specific defect is still prototype-grade** — strict top-1 accuracy is ~0.3
+(unaugmented) / ~0.5 (augmented), because labels are weak (derived from forum
+text, not verified per image). Use the defect type as a ranked candidate and
+combine with the root-cause suggestions.
 
 ## What happens if the ML model is missing?
 
