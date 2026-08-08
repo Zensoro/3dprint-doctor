@@ -19,6 +19,8 @@ what went wrong after a failed print.
   and 90-100% per-class accuracy on real print photos
 - **Reports** — Markdown and standalone HTML, saveable to file
 - **Batch analysis** — analyze directories of models with a comparison summary
+- **Shop pricing** — customer-facing HTML quote sheets (depreciation, labor,
+  waste) and machine-readable JSON output for print-shop integration
 - **Python API** — stable programmatic interface (`print_doctor.check`, ...)
 - **CLI exit codes** — critical issues exit non-zero, ready for CI integration
 
@@ -108,9 +110,26 @@ print-doctor check-batch ./models/ -o summary.md
 
 # Explicit file list
 print-doctor check-batch model1.stl model2.3mf
+
+# With shop cost pricing and machine-readable JSON
+print-doctor check-batch ./models/ --quote --json -o summary.json
 ```
 
 Prints a comparison table (score / issues / errors / volume) sorted by score.
+
+### Quote a print for a customer
+
+```bash
+# Full pricing (depreciation, labor, waste) in Markdown
+print-doctor check model.stl --quote
+
+# Machine-readable JSON (for shop systems / batch APIs)
+print-doctor check model.stl --json
+
+# Customer-facing printable HTML quote sheet
+print-doctor quote-sheet model.stl --shop "My Print Shop" \
+  --customer "Alice" --quote-number Q-001 -o quote.html
+```
 
 ### Python API
 
