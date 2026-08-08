@@ -135,3 +135,37 @@ def test_check_batch_single_file():
     result = runner.invoke(app, ["check-batch", str(m1), str(m2)])
     assert "| healthy.stl |" in result.output
     assert "| thin_wall.stl |" in result.output
+
+
+def test_check_json_output():
+    """Test check --json produces parseable JSON with cost."""
+    import json
+    mesh = trimesh.creation.box(extents=[10, 10, 10])
+    with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as f:
+        mesh.export(f.name)
+        temp_path = f.name
+    try:
+        result = runner.invoke(app, ["check", temp_path, "--json"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["filename"].endswith(".stl")
+        assert "printability_score" in data
+    finally:
+        os.unlink(temp_path)
+
+
+def test_check_quote_full_pricing():
+    """Test check --quote includes machine/labor/waste costs."""
+    mesh = trimesh.creation.box(extents=[10, 10, 10])
+    with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as f:
+        mesh.export(f.name)
+        temp_path = f.name
+    try:
+        result = runner.invoke(app, ["check", temp_path, "--quote", "-o", "/tmp/q.md"])
+        assert result.exit_code == 0
+        content = Path("/tmp/q.md").read_text()
+        assert "Machine Depreciation" in content
+        assert "Labor Cost" in content
+        assert "Waste Allowance" in content
+    finally:
+        os.unlink(temp_path)

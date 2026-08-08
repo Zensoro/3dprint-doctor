@@ -21,11 +21,15 @@ def check(
     model_path: str = typer.Argument(..., help="Path to STL/3MF file"),
     output: str = typer.Option(None, "-o", "--output", help="Output report path"),
     html: bool = typer.Option(False, "--html", help="Generate HTML report instead of Markdown"),
+    json: bool = typer.Option(False, "--json", help="Generate machine-readable JSON report"),
     material: str = typer.Option(
         "PLA", "-m", "--material", help="Material type (PLA/PETG/ABS/TPU)"
     ),
     price_per_kg: float = typer.Option(
         None, "-p", "--price", help="Material price per kg (defaults by material)"
+    ),
+    quote: bool = typer.Option(
+        False, "--quote", help="Use full shop pricing (depreciation, labor, waste)"
     ),
     no_cost: bool = typer.Option(
         False, "--no-cost", help="Skip cost estimation"
@@ -33,12 +37,14 @@ def check(
 ) -> None:
     """Analyze a 3D model for printability issues."""
     try:
-        console.print(f"[bold blue]Analyzing {model_path}...[/bold blue]")
+        if not json:
+            console.print(f"[bold blue]Analyzing {model_path}...[/bold blue]")
         analysis = analyze_mesh(model_path)
 
         estimate = None
         if not no_cost and analysis.volume > 0:
             from print_doctor.cost import MATERIAL_PRICES
+            from print_doctor.models import QuoteConfig
 
             price = price_per_kg if price_per_kg is not None else (
                 MATERIAL_PRICES.get(material.upper(), 25.0)
@@ -50,9 +56,13 @@ def check(
                 material_price_per_kg=price,
                 electricity_price_per_kwh=0.12,
                 machine_power_watts=200.0,
+                quote=QuoteConfig() if quote else None,
             )
 
-        if html:
+        if json:
+            from print_doctor.report import generate_json_report
+            report = generate_json_report(analysis, estimate)
+        elif html:
             from print_doctor.report import generate_html_report
             report = generate_html_report(analysis, estimate)
         else:
@@ -60,7 +70,10 @@ def check(
 
         if output:
             Path(output).write_text(report)
-            console.print(f"[bold green]Report saved to {output}[/bold green]")
+            if not json:
+                console.print(f"[bold green]Report saved to {output}[/bold green]")
+        elif json:
+            print(report)  # raw JSON to stdout for piping
         else:
             console.print(report)
 

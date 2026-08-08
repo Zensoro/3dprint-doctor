@@ -41,13 +41,33 @@ class MeshAnalysis:
 
 @dataclass
 class CostEstimate:
-    """Cost estimate for printing a model."""
+    """Cost estimate for printing a model.
+
+    cost_breakdown gives the full shop-pricing picture: material,
+    electricity, machine depreciation, labor, waste, and the final
+    suggested retail price.
+    """
     weight_grams: float
     print_time_hours: float
     material_cost: float
     electricity_cost: float
     total_cost: float
     suggested_price: float
+    machine_cost: float = 0.0
+    labor_cost: float = 0.0
+    waste_cost: float = 0.0
+
+
+@dataclass
+class QuoteConfig:
+    """Shop pricing parameters for quoting prints."""
+    electricity_price_per_kwh: float = 0.12
+    machine_power_watts: float = 200.0
+    machine_price: float = 399.0  # printer cost in USD
+    machine_lifetime_hours: float = 5000.0  # useful life before replacement
+    labor_rate_per_hour: float = 8.0  # operator cost
+    waste_factor: float = 0.05  # failed prints / material waste ratio
+    profit_margin: float = 2.0  # suggested_price = total * margin
 
 
 @dataclass

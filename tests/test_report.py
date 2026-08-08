@@ -115,3 +115,31 @@ def test_generate_html_report_no_cost():
     assert "<!DOCTYPE html>" in html
     assert "No issues found" in html
     assert "Cost Estimate" not in html
+
+
+def test_generate_json_report():
+    """Test JSON report serialization."""
+    from print_doctor.report import generate_json_report
+    import json
+    analysis = _make_analysis(issues=[
+        Issue(
+            name="thin_wall", description="d", severity=Severity.WARNING,
+            location="l", suggestion="s",
+        ),
+    ])
+    js = json.loads(generate_json_report(analysis, _make_estimate()))
+
+    assert js["filename"] == "test.stl"
+    assert js["printability_score"] == 85.0
+    assert js["mesh"]["watertight"] is True
+    assert js["issues"][0]["name"] == "thin_wall"
+    assert js["cost"]["suggested_price"] == 10.50
+    assert js["schema_version"] == 1
+
+
+def test_generate_json_report_no_cost():
+    """Test JSON report without cost estimate."""
+    from print_doctor.report import generate_json_report
+    import json
+    js = json.loads(generate_json_report(_make_analysis(), None))
+    assert "cost" not in js

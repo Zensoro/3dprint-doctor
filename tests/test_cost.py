@@ -71,3 +71,36 @@ def test_calculate_cost_material_density_unknown():
     )
 
     assert estimate.weight_grams > 0
+
+
+def test_calculate_cost_with_quote():
+    """Test cost calculation with full shop pricing."""
+    from print_doctor.models import QuoteConfig
+    quote = QuoteConfig()
+    est = calculate_cost(
+        volume_cm3=14.6, config=PrintConfig(),
+        material_price_per_kg=25.0, electricity_price_per_kwh=0.12,
+        machine_power_watts=200.0, quote=quote,
+    )
+    assert est.machine_cost >= 0
+    assert est.labor_cost > 0
+    assert est.waste_cost >= 0
+    # total = material + electricity + machine + labor + waste
+    assert abs(est.total_cost - (
+        est.material_cost + est.electricity_cost +
+        est.machine_cost + est.labor_cost + est.waste_cost
+    )) < 1e-6
+    assert est.suggested_price > est.total_cost
+
+
+def test_calculate_cost_quote_machine_cost():
+    """Machine depreciation scales with print time."""
+    from print_doctor.models import QuoteConfig
+    quote = QuoteConfig(machine_price=500.0, machine_lifetime_hours=100.0)
+    est = calculate_cost(
+        volume_cm3=14.6, config=PrintConfig(),
+        material_price_per_kg=25.0, electricity_price_per_kwh=0.12,
+        machine_power_watts=200.0, quote=quote,
+    )
+    # machine cost = (500/100) * print_time_hours
+    assert est.machine_cost > 0
