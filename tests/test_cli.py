@@ -299,3 +299,63 @@ def test_check_3d_report(tmp_path):
         assert "PRINT DOCTOR" in content
     finally:
         os.unlink(temp_path)
+
+
+def test_orient_command():
+    """Test orient command finds a good orientation."""
+    mesh = trimesh.creation.cone(radius=5, height=10)
+    with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as f:
+        mesh.export(f.name)
+        temp_path = f.name
+    try:
+        result = runner.invoke(app, ["orient", temp_path, "--step", "90"])
+        assert result.exit_code == 0
+        assert "Recommended orientation" in result.output
+        assert "Rotate X" in result.output
+    finally:
+        os.unlink(temp_path)
+
+
+def test_orient_command_output(tmp_path):
+    """Test orient saves the re-oriented model."""
+    mesh = trimesh.creation.cone(radius=5, height=10)
+    with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as f:
+        mesh.export(f.name)
+        temp_path = f.name
+    try:
+        out = str(tmp_path / "oriented.stl")
+        result = runner.invoke(app, ["orient", temp_path, "--step", "90", "-o", out])
+        assert result.exit_code == 0
+        assert os.path.exists(out)
+    finally:
+        os.unlink(temp_path)
+
+
+def test_hollow_command(tmp_path):
+    """Test hollow command saves material and writes shell."""
+    mesh = trimesh.creation.box(extents=[50, 50, 30])
+    with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as f:
+        mesh.export(f.name)
+        temp_path = f.name
+    try:
+        out = str(tmp_path / "shell.stl")
+        result = runner.invoke(app, ["hollow", temp_path, "-o", out, "-w", "2"])
+        assert result.exit_code == 0
+        assert os.path.exists(out)
+        assert "Material saved" in result.output
+    finally:
+        os.unlink(temp_path)
+
+
+def test_hollow_command_thin_rejected(tmp_path):
+    """Test hollow rejects too-thin models with clear error."""
+    mesh = trimesh.creation.box(extents=[10, 10, 3])
+    with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as f:
+        mesh.export(f.name)
+        temp_path = f.name
+    try:
+        result = runner.invoke(app, ["hollow", temp_path, "-w", "2"])
+        assert result.exit_code == 1
+        assert "too thin" in result.output
+    finally:
+        os.unlink(temp_path)

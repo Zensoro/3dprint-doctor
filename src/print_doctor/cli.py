@@ -233,6 +233,67 @@ def repair(
 
 
 @app.command()
+def orient(
+    model_path: str = typer.Argument(..., help="Path to STL/3MF file"),
+    step: float = typer.Option(15.0, "--step", help="Rotation search step in degrees"),
+    output: str = typer.Option(None, "-o", "--output", help="Save re-oriented model"),
+) -> None:
+    """Find a good print orientation (minimize overhangs, maximize bed contact)."""
+    from print_doctor.mesh import load_mesh
+    from print_doctor.orient import find_orientation
+
+    try:
+        mesh = load_mesh(model_path)
+        console.print(f"[bold blue]Searching orientations for {model_path}...[/bold blue]")
+        result = find_orientation(mesh, step_deg=step)
+
+        console.print(f"[bold green]Recommended orientation:[/bold green]")
+        console.print(f"  Rotate X: {result.rx_deg} degrees")
+        console.print(f"  Rotate Y: {result.ry_deg} degrees")
+        console.print(f"  Overhang faces: {result.overhang_fraction * 100:.1f}%")
+        console.print(f"  Bed contact: {result.contact_fraction * 100:.1f}%")
+
+        if output:
+            rotated = mesh.copy()
+            import math
+            if result.rx_deg:
+                rotated.apply_transform(
+                    __import__("trimesh").transformations.rotation_matrix(
+                        math.radians(result.rx_deg), [1, 0, 0]))
+            if result.ry_deg:
+                rotated.apply_transform(
+                    __import__("trimesh").transformations.rotation_matrix(
+                        math.radians(result.ry_deg), [0, 1, 0]))
+            rotated.export(output)
+            console.print(f"[bold green]Saved oriented model to {output}[/bold green]")
+    except Exception as e:
+        console.print(f"[bold red]Error: {e}[/bold red]")
+        raise typer.Exit(code=1)
+
+
+@app.command()
+def hollow(
+    model_path: str = typer.Argument(..., help="Path to STL/3MF file"),
+    output: str = typer.Option("hollowed.stl", "-o", "--output", help="Output shell file"),
+    wall: float = typer.Option(2.0, "-w", "--wall", help="Shell wall thickness in mm"),
+) -> None:
+    """Hollow a model to save material (approximate equal-wall shell)."""
+    from print_doctor.hollow import hollow_file
+
+    try:
+        result = hollow_file(model_path, output, wall=wall)
+        console.print(f"[bold blue]Hollowing {model_path}...[/bold blue]")
+        console.print(f"  Original volume: {result.original_volume / 1000.0:.1f} cm3")
+        console.print(f"  Shell volume:    {result.shell_volume / 1000.0:.1f} cm3")
+        console.print(f"  Material saved:  [bold green]{result.saved_percent:.1f}%[/bold green]")
+        console.print(f"  Wall thickness:  {result.wall:.1f} mm")
+        console.print(f"[bold green]Saved to {output}[/bold green]")
+    except Exception as e:
+        console.print(f"[bold red]Error: {e}[/bold red]")
+        raise typer.Exit(code=1)
+
+
+@app.command()
 def version() -> None:
     """Print version information."""
     from print_doctor import __version__
