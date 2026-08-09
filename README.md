@@ -49,8 +49,8 @@ what went wrong?**
 |---|---|
 | **Check & quote** (before printing) | **Diagnose** (after a failure) |
 | <img src="docs/screenshots/check.svg" alt="print-doctor check" width="420"> | <img src="docs/screenshots/diagnose.svg" alt="print-doctor diagnose" width="420"> |
-| **Watch** (during printing) | |
-| <img src="docs/screenshots/watch.svg" alt="print-doctor watch" width="420"> | |
+| **Watch** (during printing) | **3D defect report** (interactive) |
+| <img src="docs/screenshots/watch.svg" alt="print-doctor watch" width="420"> | <img src="docs/screenshots/3d_report.png" alt="print-doctor 3D report" width="420"> |
 
 ## Features
 
