@@ -27,6 +27,8 @@ class PrintMonitor:
         evidence_dir: str = "evidence",
         cooldown_seconds: float = 60.0,
         webhook: Optional[str] = None,
+        gcode_path: Optional[str] = None,
+        progress_provider=None,
     ):
         if classifier is None:
             classifier = DefectClassifier()
@@ -36,6 +38,34 @@ class PrintMonitor:
         self.cooldown = cooldown_seconds
         self.webhook = webhook
         self._last_alert: float = 0.0
+
+        # G-code progress context (optional)
+        self.gcode = None
+        if gcode_path:
+            from print_doctor.gcode import parse_gcode_file
+            self.gcode = parse_gcode_file(gcode_path)
+        self.progress_provider = progress_provider
+
+    def _progress_context(self) -> str:
+        """Return a short progress string (layer / percent) for display."""
+        if self.gcode is None:
+            return ""
+        if self.progress_provider is None:
+            return f"layers: {self.gcode.layer_count}, max Z: {self.gcode.max_z:.1f}mm"
+        try:
+            progress = float(self.progress_provider())
+        except Exception:
+            return ""
+        if progress is None:
+            return ""
+        # throttle: only report when changed by >= 1%
+        if abs(progress - getattr(self, "_last_progress", -1.0)) < 0.01:
+            return ""
+        self._last_progress = progress
+        layer = self.gcode.layer_at(progress * self.gcode.total_extruded) \
+            if self.gcode.total_extruded > 0 else None
+        layer_txt = f"layer {layer.number}" if layer is not None else "?"
+        return f"[{progress * 100:.0f}% · {layer_txt}]"
 
     # ------------------------------------------------------------------
     def check_frame(
@@ -72,6 +102,9 @@ class PrintMonitor:
                 if not ok:
                     print("Camera frame read failed")
                     break
+                ctx = self._progress_context()
+                if ctx:
+                    print(f"  {ctx}")
                 self.check_frame(frame)
                 if stop_after and (time.time() - start) > stop_after:
                     break
@@ -108,6 +141,9 @@ class PrintMonitor:
                         np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR
                     )
                     if frame is not None:
+                        ctx = self._progress_context()
+                        if ctx:
+                            print(f"  {ctx}")
                         self.check_frame(frame)
                 except Exception as e:
                     print(f"Snapshot fetch failed: {e}")
@@ -138,8 +174,14 @@ class PrintMonitor:
                     seen.add(p.name)
                     frame = cv2.imread(str(p))
                     if frame is not None:
-                        print(f"[new frame] {p.name}")
+                        ctx = self._progress_context()
+                        print(f"[new frame] {p.name}{(' · ' + ctx) if ctx else ''}")
                         self.check_frame(frame)
+                else:
+                    # existing frame: still refresh progress context
+                    ctx = self._progress_context()
+                    if ctx:
+                        print(f"  {ctx}")
                 if stop_after and (time.time() - start) > stop_after:
                     break
                 time.sleep(self.interval)
@@ -194,3 +236,36 @@ class PrintMonitor:
                 print(f"Webhook failed: {e}")
 
         threading.Thread(target=_send, daemon=True).start()
+
+
+def moonraker_progress_provider(url: str, api_key: str = "", timeout: float = 8.0):
+    """Build a progress provider that polls a Moonraker printer API.
+
+    Returns a callable returning progress 0-1, or None when unknown /
+    unavailable. Moonraker's ``print_stats`` exposes ``print_duration``
+    (elapsed) and ``total_duration`` (estimated total), so progress =
+    elapsed / total.
+
+    URL example: http://printer:7125
+    """
+    import json
+    import urllib.request
+
+    def _get_progress() -> float:
+        try:
+            req = urllib.request.Request(
+                f"{url.rstrip('/')}/printer/objects/query"
+                "?print_stats=print_duration&print_stats=total_duration",
+                headers={"X-Api-Key": api_key} if api_key else {},
+            )
+            data = json.loads(urllib.request.urlopen(req, timeout=timeout).read())
+            result = data.get("result", {}).get("status", {}).get("print_stats", {})
+            elapsed = result.get("print_duration", 0)
+            total = result.get("total_duration", 0)
+            if not total or total <= 0:
+                return None
+            return min(1.0, max(0.0, elapsed / total))
+        except Exception:
+            return None
+
+    return _get_progress

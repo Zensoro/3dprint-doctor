@@ -396,16 +396,35 @@ def watch(
     ),
     user: str = typer.Option(None, "-u", "--user", help="Basic auth user (URL sources)"),
     password: str = typer.Option(None, "-P", "--password", help="Basic auth password (URL sources)"),
+    gcode: str = typer.Option(
+        None, "--gcode", help="G-code file for progress context (layer/percent display)"
+    ),
+    progress: float = typer.Option(
+        None, "--progress", min=0.0, max=1.0,
+        help="Manual print progress 0-1 (with --gcode, shows current layer)"
+    ),
+    moonraker: str = typer.Option(
+        None, "--moonraker",
+        help="Moonraker printer URL (e.g. http://printer:7125) to auto-fetch progress"
+    ),
 ) -> None:
     """Monitor a camera, photo directory, or webcam snapshot URL for print defects."""
-    from print_doctor.monitor import PrintMonitor
+    from print_doctor.monitor import PrintMonitor, moonraker_progress_provider
 
     try:
+        progress_provider = None
+        if progress is not None:
+            progress_provider = lambda: progress  # noqa: E731
+        elif moonraker:
+            progress_provider = moonraker_progress_provider(moonraker)
+
         monitor = PrintMonitor(
             interval_seconds=interval,
             evidence_dir=evidence,
             cooldown_seconds=cooldown,
             webhook=webhook,
+            gcode_path=gcode,
+            progress_provider=progress_provider,
         )
         if source.isdigit():
             monitor.run_camera(int(source), stop_after=duration)

@@ -201,3 +201,67 @@ def test_run_url_polls_snapshot(tmp_path, monkeypatch):
 
     shots = list((tmp_path / "evidence").glob("*.jpg"))
     assert len(shots) >= 1
+
+
+def test_progress_context_layer(tmp_path):
+    """Progress context shows current layer from G-code + progress."""
+    gcode = tmp_path / "p.gcode"
+    gcode.write_text(""";LAYER_CHANGE
+G1 E0.1
+;LAYER_CHANGE
+G1 E0.3
+;LAYER_CHANGE
+G1 E0.5
+""")
+    monitor = PrintMonitor(
+        classifier=object(),
+        interval_seconds=0.1,
+        evidence_dir=str(tmp_path / "ev"),
+        cooldown_seconds=0,
+        gcode_path=str(gcode),
+        progress_provider=lambda: 0.5,
+    )
+    ctx = monitor._progress_context()
+    assert "50%" in ctx
+    assert "layer" in ctx
+
+
+def test_progress_context_no_provider(tmp_path):
+    """Without a progress provider, shows layer summary."""
+    gcode = tmp_path / "p.gcode"
+    gcode.write_text(";LAYER_CHANGE\nG1 E0.1\n")
+    monitor = PrintMonitor(
+        classifier=object(),
+        evidence_dir=str(tmp_path / "ev"),
+        gcode_path=str(gcode),
+    )
+    ctx = monitor._progress_context()
+    assert "layers:" in ctx
+
+
+def test_moonraker_progress_provider(monkeypatch):
+    """Moonraker provider computes progress from print/total duration."""
+    from print_doctor.monitor import moonraker_progress_provider
+    import json
+
+    class FakeResp:
+        def read(self):
+            return json.dumps({
+                "result": {"status": {"print_stats": {
+                    "print_duration": 25.0, "total_duration": 100.0,
+                }}}
+            }).encode()
+
+    monkeypatch.setattr(
+        "urllib.request.urlopen", lambda *a, **k: FakeResp()
+    )
+    provider = moonraker_progress_provider("http://printer:7125")
+    assert abs(provider() - 0.25) < 1e-9
+
+
+def test_moonraker_progress_provider_failure():
+    """Provider returns None on network failure (graceful)."""
+    from print_doctor.monitor import moonraker_progress_provider
+
+    provider = moonraker_progress_provider("http://127.0.0.1:1")
+    assert provider() is None
