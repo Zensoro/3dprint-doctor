@@ -60,6 +60,10 @@ degenerate faces, thin walls (ray-cast), overhangs, self-intersections,
 isolated components and sliver triangles** — each with a severity level and an
 actionable fix. Outputs a 0-100 score.
 
+**Local web interface** (`python -m print_doctor.webapp`): drag-drop an STL/3MF
+into your browser, get a 3D defect report with highlighting. Runs fully
+offline — models never leave your machine.
+
 **Interactive 3D report** (`check --3d`): a self-contained HTML file with the
 model rendered in 3D and defect faces highlighted by type (overhang red,
 thin-wall yellow, self-intersection purple). Drag to rotate, scroll to zoom —
@@ -133,6 +137,10 @@ the report.
 
 ```bash
 pip install print-doctor
+
+# Web interface — upload a model, see 3D defect report in your browser
+python -m print_doctor.webapp
+# then open http://127.0.0.1:8000
 
 # Check a model (printability score + cost estimate)
 print-doctor check model.stl

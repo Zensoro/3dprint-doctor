@@ -2,6 +2,13 @@
 
 All notable changes to Print Doctor are documented here.
 
+## [0.13.0] - 2026-08-09
+
+### Added
+- Local web interface (`python -m print_doctor.webapp`): drag-drop STL/3MF,
+  see a 3D defect report with highlighting in the browser. Offline, private.
+- FastAPI + upload endpoint + JSON report API.
+
 ## [0.12.0] - 2026-08-09
 
 ### Added

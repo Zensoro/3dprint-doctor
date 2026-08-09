@@ -6,7 +6,7 @@ Public API:
     diagnose(photos, hints) -> Diagnosis
 """
 
-__version__ = "0.12.0"
+__version__ = "0.13.0"
 
 from print_doctor.mesh import analyze_mesh as check
 from print_doctor.cost import calculate_cost as estimate_cost
