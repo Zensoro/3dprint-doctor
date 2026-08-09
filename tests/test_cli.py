@@ -251,3 +251,32 @@ def test_repair_command_output_file():
                 os.unlink(out_path)
     finally:
         os.unlink(temp_path)
+
+
+def test_gcode_info_command(tmp_path):
+    """Test gcode-info command parses a G-code file."""
+    gcode = tmp_path / "test.gcode"
+    gcode.write_text(""";LAYER_CHANGE
+;Z:0.2
+G1 Z0.2 E0.1
+;LAYER_CHANGE
+;Z:0.4
+G1 Z0.4 E0.3
+""")
+    result = runner.invoke(app, ["gcode-info", str(gcode)])
+    assert result.exit_code == 0
+    assert "Layers: 2" in result.output
+    assert "Total extruded" in result.output
+
+
+def test_gcode_info_with_progress(tmp_path):
+    """Test gcode-info with E position shows progress."""
+    gcode = tmp_path / "test.gcode"
+    gcode.write_text(""";LAYER_CHANGE
+G1 E0.1
+;LAYER_CHANGE
+G1 E0.3
+""")
+    result = runner.invoke(app, ["gcode-info", str(gcode), "-e", "0.2"])
+    assert result.exit_code == 0
+    assert "Progress" in result.output

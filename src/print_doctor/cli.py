@@ -331,6 +331,38 @@ def check_batch(
 
 
 @app.command()
+def gcode_info(
+    gcode_path: str = typer.Argument(..., help="Path to G-code file"),
+    e_position: float = typer.Option(None, "-e", "--e-position",
+                                     help="Current E position to locate (progress)"),
+) -> None:
+    """Analyze a sliced G-code file: layers, extrusion, progress."""
+    from print_doctor.gcode import parse_gcode_file
+
+    try:
+        a = parse_gcode_file(gcode_path)
+        console.print(f"[bold blue]G-code:[/bold blue] {a.filename}")
+        console.print(f"  Layers: {a.layer_count}")
+        console.print(f"  Max Z: {a.max_z:.2f} mm")
+        console.print(f"  Total extruded: {a.total_extruded:.2f} (mm of filament)")
+        console.print(f"  Extruder moves: {a.total_moves}")
+
+        if e_position is not None:
+            layer = a.layer_at(e_position)
+            progress = a.progress_at(e_position)
+            console.print(f"  At E={e_position:.2f}:")
+            if layer is not None:
+                z_str = f"{layer.z:.2f}" if layer.z is not None else "-"
+                console.print(f"    Layer {layer.number} (Z={z_str} mm)")
+            else:
+                console.print("    (beyond last layer)")
+            console.print(f"    Progress: {progress * 100:.1f}%")
+    except Exception as e:
+        console.print(f"[bold red]Error: {e}[/bold red]")
+        raise typer.Exit(code=1)
+
+
+@app.command()
 def watch(
     source: str = typer.Argument(
         ..., help="Camera index (0,1,...), a directory, or an http(s) snapshot URL"
