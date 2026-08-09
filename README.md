@@ -70,6 +70,16 @@ Fixes common issues automatically: **face normals, winding, stitching and
 degenerate faces**. Reports honestly what it *cannot* fix (large holes,
 self-intersections — use a dedicated tool for those).
 
+### Print orientation (`orient`)
+Finds a good orientation before slicing: searches rotations, scores overhang
+vs bed contact, and recommends "rotate X 30°" — or saves the re-oriented
+model. A fast sanity check before you commit to a direction.
+
+### Hollowing (`hollow`)
+Saves material: hollows a model with a chosen wall thickness and reports the
+percentage saved (e.g. a 1.5mm shell of a benchy saves ~66% material).
+Rejects models too thin for the requested wall.
+
 ### G-code analysis (`gcode-info`)
 Parses sliced G-code (OrcaSlicer/PrusaSlicer `;LAYER_CHANGE` and Bambu
 `;LAYER:n`) to report **layer count, max Z, total extrusion**, and locate the

@@ -2,6 +2,14 @@
 
 All notable changes to Print Doctor are documented here.
 
+## [0.11.0] - 2026-08-09
+
+### Added
+- `orient` — print orientation optimization (overhang vs bed-contact scoring,
+  coarse rotation search, optional re-oriented model export).
+- `hollow` — material-saving shell extraction with wall thickness, rejects
+  too-thin models, reports % saved.
+
 ## [0.10.0] - 2026-08-09
 
 ### Added

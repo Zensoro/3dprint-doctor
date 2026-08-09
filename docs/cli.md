@@ -151,3 +151,35 @@ print-doctor watch 0 --gcode model.gcode --moonraker http://printer:7125
 ```
 
 Progress shows as `[47% · layer 123]` next to frame checks and defect alerts.
+
+## `orient`
+
+Find a good print orientation (minimize overhangs, maximize bed contact).
+
+```bash
+print-doctor orient <model.stl> [options]
+```
+
+| Option | Description |
+|---|---|
+| `--step` | Rotation search step in degrees (default 15) |
+| `-o, --output` | Save the re-oriented model |
+
+Coarse search is a fast sanity check; use your slicer's auto-orientation for
+final placement.
+
+## `hollow`
+
+Hollow a model to save material (approximate equal-wall shell).
+
+```bash
+print-doctor hollow <model.stl> [options]
+```
+
+| Option | Description |
+|---|---|
+| `-o, --output` | Output shell file (default `hollowed.stl`) |
+| `-w, --wall` | Shell wall thickness in mm (default 2) |
+
+Rejects models thinner than ~2x the wall. Shell is scale-approximate, not
+perfectly uniform — for precise shelling use CAD software.
