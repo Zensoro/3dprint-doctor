@@ -455,3 +455,100 @@ def analyze_mesh_with_detectors(
         issues=issues,
         score=score,
     )
+
+
+def repair_mesh(
+    file_path: str,
+    output_path: str = None,
+    fix_normals: bool = True,
+    fix_winding: bool = True,
+    stitch: bool = True,
+    remove_degenerate: bool = True,
+) -> dict:
+    """Repair common mesh issues (light fixes only).
+
+    Performs the fixes trimesh can reliably do:
+      - fix_normals: unify face winding (partial inversions)
+      - fix_winding: consistent outward orientation
+      - stitch: merge duplicate vertices / disconnected seams
+      - remove_degenerate: drop zero-area faces
+
+    NOT attempted (trimesh cannot do these reliably):
+      - large holes / missing regions
+      - self-intersections
+
+    Returns a dict describing what was found and what was fixed, with
+    honest "not_fixable" entries for issues outside repair scope.
+    """
+    import trimesh.repair as trepair
+
+    mesh = load_mesh(file_path)
+    report = {
+        "input": os.path.basename(file_path),
+        "issues_before": {},
+        "issues_after": {},
+        "fixed": [],
+        "not_fixable": [],
+    }
+
+    # ---- assess before ----
+    before = {
+        "watertight": mesh.is_watertight,
+        "winding_consistent": mesh.is_winding_consistent,
+        "degenerate_faces": int(np.sum(mesh.area_faces < 1e-10)),
+        "vertices": len(mesh.vertices),
+        "faces": len(mesh.faces),
+    }
+    report["issues_before"] = before
+
+    # ---- apply fixes ----
+    if fix_normals:
+        trepair.fix_normals(mesh)
+        report["fixed"].append("fix_normals")
+    if fix_winding:
+        trepair.fix_winding(mesh)
+        report["fixed"].append("fix_winding")
+    if stitch:
+        try:
+            trepair.stitch(mesh)
+            report["fixed"].append("stitch")
+        except Exception:
+            # stitch fails on meshes with no duplicate vertices to merge;
+            # that's fine - nothing to stitch
+            pass
+    if remove_degenerate:
+        # broken_faces returns indices of degenerate faces; remove them
+        broken = trepair.broken_faces(mesh)
+        if len(broken) > 0:
+            mask = np.ones(len(mesh.faces), dtype=bool)
+            mask[broken] = False
+            mesh.update_faces(mask)
+        report["fixed"].append("remove_degenerate")
+
+    # ---- assess after ----
+    after = {
+        "watertight": mesh.is_watertight,
+        "winding_consistent": mesh.is_winding_consistent,
+        "degenerate_faces": int(np.sum(mesh.area_faces < 1e-10)),
+        "vertices": len(mesh.vertices),
+        "faces": len(mesh.faces),
+    }
+    report["issues_after"] = after
+
+    # ---- honest not-fixable ----
+    if not mesh.is_watertight:
+        report["not_fixable"].append(
+            "watertightness (holes): trimesh cannot reliably fill holes; "
+            "use a dedicated repair tool for large gaps"
+        )
+    from print_doctor.mesh import detect_self_intersections
+    if detect_self_intersections(mesh):
+        report["not_fixable"].append(
+            "self-intersections: no automatic repair; re-export from CAD"
+        )
+
+    if output_path:
+        mesh.export(output_path)
+        report["output"] = output_path
+
+    return report

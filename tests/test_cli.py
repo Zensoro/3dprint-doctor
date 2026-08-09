@@ -215,3 +215,39 @@ def test_check_with_detector_filter():
         assert "Printability Score" in result.output
     finally:
         os.unlink(temp_path)
+
+
+def test_repair_command():
+    """Test repair command on a healthy model."""
+    mesh = trimesh.creation.icosphere(subdivisions=3)
+    with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as f:
+        mesh.export(f.name)
+        temp_path = f.name
+    try:
+        result = runner.invoke(app, ["repair", temp_path])
+        assert result.exit_code == 0
+        assert "Input:" in result.output
+        assert "Applied fixes" in result.output
+    finally:
+        os.unlink(temp_path)
+
+
+def test_repair_command_output_file():
+    """Test repair writes fixed model to file."""
+    mesh = trimesh.creation.icosphere(subdivisions=3)
+    with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as f:
+        mesh.export(f.name)
+        temp_path = f.name
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as out:
+            out_path = out.name
+        try:
+            result = runner.invoke(app, ["repair", temp_path, "-o", out_path])
+            assert result.exit_code == 0
+            assert os.path.exists(out_path)
+            assert "Saved to" in result.output
+        finally:
+            if os.path.exists(out_path):
+                os.unlink(out_path)
+    finally:
+        os.unlink(temp_path)

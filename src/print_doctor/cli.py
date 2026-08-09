@@ -174,6 +174,53 @@ def quote_sheet(
 
 
 @app.command()
+def repair(
+    model_path: str = typer.Argument(..., help="Path to STL/3MF file"),
+    output: str = typer.Option(None, "-o", "--output", help="Output fixed model path"),
+    no_normals: bool = typer.Option(False, "--no-normals", help="Skip normal fix"),
+    no_winding: bool = typer.Option(False, "--no-winding", help="Skip winding fix"),
+    no_stitch: bool = typer.Option(False, "--no-stitch", help="Skip stitch"),
+    no_degenerate: bool = typer.Option(False, "--no-degenerate", help="Skip degenerate-face removal"),
+) -> None:
+    """Repair common mesh issues (normals, winding, stitch, degenerate faces).
+
+    Note: large holes and self-intersections are NOT fixable by this tool;
+    the report states them honestly.
+    """
+    from print_doctor.mesh import repair_mesh
+
+    try:
+        report = repair_mesh(
+            model_path,
+            output_path=output,
+            fix_normals=not no_normals,
+            fix_winding=not no_winding,
+            stitch=not no_stitch,
+            remove_degenerate=not no_degenerate,
+        )
+        console.print(f"[bold blue]Input:[/bold blue] {report['input']}")
+        console.print(f"  vertices: {report['issues_before']['vertices']} -> "
+                      f"{report['issues_after']['vertices']}")
+        console.print(f"  faces: {report['issues_before']['faces']} -> "
+                      f"{report['issues_after']['faces']}")
+        console.print(f"  watertight: {report['issues_before']['watertight']} -> "
+                      f"{report['issues_after']['watertight']}")
+        console.print(f"  winding: {report['issues_before']['winding_consistent']} -> "
+                      f"{report['issues_after']['winding_consistent']}")
+        console.print(f"[bold green]Applied fixes:[/bold green] "
+                      f"{', '.join(report['fixed']) or 'none needed'}")
+        if report["not_fixable"]:
+            console.print("[bold yellow]Not fixable (honest):[/bold yellow]")
+            for n in report["not_fixable"]:
+                console.print(f"  - {n}")
+        if output:
+            console.print(f"[bold green]Saved to {output}[/bold green]")
+    except Exception as e:
+        console.print(f"[bold red]Error: {e}[/bold red]")
+        raise typer.Exit(code=1)
+
+
+@app.command()
 def version() -> None:
     """Print version information."""
     from print_doctor import __version__
