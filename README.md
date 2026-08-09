@@ -207,6 +207,24 @@ uv run python tests/generate_fixtures.py
 uv run python tests/generate_diagnose_fixtures.py
 ```
 
+## Development & AI disclosure
+
+This project is developed with **heavy AI assistance**. Concretely:
+
+- AI assistants were used for code generation, test writing, documentation,
+  refactoring, and debugging across the majority of commits.
+- The ML defect classifier was trained on real forum photos with **weak
+  labels**; its measured limitations (healthy-vs-defect ~100% reliable,
+  which-defect top-1 ~0.3-0.5) are documented honestly in this README and the
+  docs — see [How it works](docs/diagnosis.md).
+- Core algorithms (mesh checks, cost model) and all quantitative claims are
+  **human-reviewed**; no claim in this repo is machine-asserted without
+  inspection.
+
+We disclose this because the project targets the 3D printing community, where
+trust in tool outputs matters. If you find a claim that overstates what the
+tool does, please open an issue — accuracy over hype.
+
 ## License
 
 MIT License

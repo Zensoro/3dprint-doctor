@@ -41,6 +41,7 @@ nav:
   - Integrations:
       - OctoPrint: octoprint.md
       - Klipper / Moonraker: moonraker.md
+  - Development & AI Disclosure: disclosure.md
   - FAQ: faq.md
 
 markdown_extensions:
