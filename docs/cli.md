@@ -102,3 +102,37 @@ Print version information.
 ```bash
 print-doctor version
 ```
+
+## `repair`
+
+Repair common mesh issues (normals, winding, stitch, degenerate faces).
+
+```bash
+print-doctor repair <model.stl> [options]
+```
+
+| Option | Description |
+|---|---|
+| `-o, --output` | Save fixed model to file |
+| `--no-normals` | Skip normal fix |
+| `--no-winding` | Skip winding fix |
+| `--no-stitch` | Skip stitch |
+| `--no-degenerate` | Skip degenerate-face removal |
+
+Reports before/after stats and honestly lists issues it cannot fix (large
+holes, self-intersections).
+
+## `gcode-info`
+
+Analyze a sliced G-code file.
+
+```bash
+print-doctor gcode-info <model.gcode> [options]
+```
+
+| Option | Description |
+|---|---|
+| `-e, --e-position` | Current E position to locate (shows layer + progress %) |
+
+Supports OrcaSlicer/PrusaSlicer (`;LAYER_CHANGE`) and Bambu Studio
+(`;LAYER:n`) markers.

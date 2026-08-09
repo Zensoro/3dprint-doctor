@@ -2,6 +2,17 @@
 
 All notable changes to Print Doctor are documented here.
 
+## [0.8.0] - 2026-08-09
+
+### Added
+- `repair` — fix normals/winding/stitch/degenerate faces with honest
+  not-fixable reporting (large holes, self-intersections).
+- `gcode-info` — G-code layer/extrusion/progress analysis
+  (OrcaSlicer/PrusaSlicer/Bambu markers).
+- Weak-supervised defect localization: anomaly regions (bbox/area/score)
+  in diagnosis reports.
+- Development & AI disclosure in README and docs.
+
 ## [0.7.0] - 2026-08-08
 
 ### Added

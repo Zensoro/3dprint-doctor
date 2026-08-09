@@ -60,6 +60,16 @@ degenerate faces, thin walls (ray-cast), overhangs, self-intersections,
 isolated components and sliver triangles** — each with a severity level and an
 actionable fix. Outputs a 0-100 score.
 
+### Mesh repair (`repair`)
+Fixes common issues automatically: **face normals, winding, stitching and
+degenerate faces**. Reports honestly what it *cannot* fix (large holes,
+self-intersections — use a dedicated tool for those).
+
+### G-code analysis (`gcode-info`)
+Parses sliced G-code (OrcaSlicer/PrusaSlicer `;LAYER_CHANGE` and Bambu
+`;LAYER:n`) to report **layer count, max Z, total extrusion**, and locate the
+current print state at any E position (layer + progress %).
+
 ### Cost quoting (`check --quote`, `quote-sheet`)
 Full shop pricing: material, electricity, **machine depreciation, labor,
 waste allowance** and a suggested retail price. Emits Markdown, HTML, or
@@ -83,6 +93,10 @@ still prototype-grade: strict top-1 accuracy is ~0.3 (unaugmented) / ~0.5
 (data-augmented), because the training labels are **weak** — derived from forum
 post text, not verified against each image. Treat the defect type as a ranked
 candidate, not ground truth.
+
+Diagnosis also reports **anomaly region localization** (best-effort bounding
+boxes of where something looks unusual) — see the "Anomaly Regions" table in
+the report.
 
 ### Shop & batch workflows
 - `check-batch` — analyze directories, sortable comparison table
