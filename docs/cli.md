@@ -183,3 +183,20 @@ print-doctor hollow <model.stl> [options]
 
 Rejects models thinner than ~2x the wall. Shell is scale-approximate, not
 perfectly uniform — for precise shelling use CAD software.
+
+## `support`
+
+Estimate support material needed (overhang area, volume, weight, cost).
+
+```bash
+print-doctor support <model.stl> [options]
+```
+
+| Option | Description |
+|---|---|
+| `--max-angle` | Overhang threshold in degrees (default 45) |
+| `--density` | Support density factor (default 0.15) |
+| `-p, --price` | Material price per kg (default 25) |
+
+Estimate only — calibrate `--density` against your slicer. Detects external
+overhangs; internal cavity overhangs are not detectable from surface geometry.

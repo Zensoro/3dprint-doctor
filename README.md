@@ -80,6 +80,11 @@ Saves material: hollows a model with a chosen wall thickness and reports the
 percentage saved (e.g. a 1.5mm shell of a benchy saves ~66% material).
 Rejects models too thin for the requested wall.
 
+### Support estimation (`support`)
+Estimates how much support material a model needs (overhang area → projected
+height → volume → weight → cost). Directly useful for quoting prints with
+supports. Estimate only — calibrate the density factor against your slicer.
+
 ### G-code analysis (`gcode-info`)
 Parses sliced G-code (OrcaSlicer/PrusaSlicer `;LAYER_CHANGE` and Bambu
 `;LAYER:n`) to report **layer count, max Z, total extrusion**, and locate the

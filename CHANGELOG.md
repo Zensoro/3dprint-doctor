@@ -2,6 +2,13 @@
 
 All notable changes to Print Doctor are documented here.
 
+## [0.12.0] - 2026-08-09
+
+### Added
+- `support` — support material estimation (overhang area, volume, weight, cost)
+  for quoting prints with supports. Density factor calibratable, external
+  overhangs only (honest boundary).
+
 ## [0.11.0] - 2026-08-09
 
 ### Added
