@@ -66,3 +66,12 @@ def test_ml_path_absent_model_falls_back():
         assert d.image_count == 1
     finally:
         vm.MODEL_PATH = orig
+
+
+def test_diagnose_includes_regions():
+    """Diagnosis includes anomaly region localization."""
+    d = diagnose_photos([str(FIXTURES / "stringing.jpg")], use_ml=False)
+    # localization runs regardless of defects
+    assert hasattr(d, "regions")
+    report = generate_diagnosis_report(d)
+    assert "Anomaly Regions" in report

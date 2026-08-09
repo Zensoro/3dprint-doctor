@@ -59,9 +59,17 @@ def diagnose_photos(
             classifier = None
 
     all_defects: List[Defect] = []
+    all_regions = []
     for path in image_paths:
         img = load_image(str(path))
         all_defects.extend(_detect_on_image(img, use_ml, classifier))
+        # Weakly-supervised localization: highlight where anomalies are
+        try:
+            from print_doctor.vision import preprocess, locate_defects
+            gray, mask = preprocess(img)
+            all_regions.extend(locate_defects(img, mask))
+        except Exception:
+            pass
 
     # De-duplicate: keep the highest confidence for each defect type
     best: Dict[str, Defect] = {}
@@ -82,6 +90,7 @@ def diagnose_photos(
         defects=unique_defects,
         root_causes=root_causes,
         image_count=len(image_paths),
+        regions=all_regions,
     )
 
 
@@ -103,6 +112,21 @@ def generate_diagnosis_report(diagnosis: Diagnosis) -> str:
             lines.append(f"### {d.type.value} (confidence {d.confidence:.2f})")
             lines.append(f"- **Evidence:** {d.evidence}")
             lines.append("")
+
+    if diagnosis.regions:
+        lines.append("## Anomaly Regions (localization)")
+        lines.append("")
+        lines.append("| # | Position (x,y,w,h) | Area | Score |")
+        lines.append("|---|---|---|---|")
+        for i, r in enumerate(diagnosis.regions, 1):
+            lines.append(
+                f"| {i} | ({r['x']}, {r['y']}, {r['w']}, {r['h']}) "
+                f"| {r['area']} px | {r['score']} |"
+            )
+        lines.append("")
+        lines.append("> Localization is best-effort: it highlights *where* "
+                     "something is unusual, not *what* it is.")
+        lines.append("")
 
     if diagnosis.root_causes:
         lines.append("## Likely Root Causes")

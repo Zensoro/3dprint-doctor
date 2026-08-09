@@ -1,6 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Tuple
+from typing import Any, Dict, List, Tuple
 
 
 class Severity(Enum):
@@ -116,3 +116,4 @@ class Diagnosis:
     defects: List[Defect]
     root_causes: List[RootCause]
     image_count: int
+    regions: List[Dict[str, Any]] = field(default_factory=list)

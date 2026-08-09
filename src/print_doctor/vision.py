@@ -281,3 +281,57 @@ ALL_DETECTORS = [
     detect_color_bleeding,
     detect_first_layer_failure,
 ]
+
+
+def locate_defects(img: np.ndarray, mask: np.ndarray) -> list:
+    """Locate defect regions in a photo (weakly supervised heatmap).
+
+    Returns a list of dicts: {type, x, y, w, h, score} for regions that
+    look anomalous. Uses local texture variance + brightness deviation
+    from the body median, thresholded at the top 5% of the body.
+
+    This is deliberately simple and best-effort: it highlights *where*
+    something is unusual, not *what* it is. The ML classifier decides the
+    type; this only localizes.
+    """
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    body = gray * (mask > 0).astype(np.uint8)
+    body_px = body[body > 0]
+    if len(body_px) < 500:
+        return []
+
+    med = np.median(body_px)
+
+    # local texture variance
+    lap = cv2.Laplacian(gray, cv2.CV_64F)
+    lap_var = cv2.boxFilter(lap ** 2, -1, (15, 15))
+    # brightness deviation from body median
+    dev = np.abs(gray.astype(np.float64) - med)
+
+    # combine into an anomaly score (normalized independently)
+    lap_norm = cv2.normalize(lap_var, None, 0, 1, cv2.NORM_MINMAX)
+    dev_norm = cv2.normalize(dev, None, 0, 1, cv2.NORM_MINMAX)
+    score = lap_norm * 0.5 + dev_norm * 0.5
+    score[mask == 0] = 0
+
+    body_scores = score[mask > 0]
+    if len(body_scores) == 0:
+        return []
+    thresh = float(np.percentile(body_scores, 95))
+
+    hot = (score > thresh).astype(np.uint8) * 255
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(hot, 8)
+
+    regions = []
+    for i in range(1, num_labels):
+        x, y, w, h, area = stats[i]
+        if area < 100:  # ignore speckles
+            continue
+        regions.append({
+            "type": "anomaly",
+            "x": int(x), "y": int(y), "w": int(w), "h": int(h),
+            "area": int(area),
+            "score": round(float(score[y:y + h, x:x + w].mean()), 3),
+        })
+    regions.sort(key=lambda r: r["area"], reverse=True)
+    return regions[:5]
