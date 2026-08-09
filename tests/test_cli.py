@@ -359,3 +359,35 @@ def test_hollow_command_thin_rejected(tmp_path):
         assert "too thin" in result.output
     finally:
         os.unlink(temp_path)
+
+
+def test_support_command():
+    """Test support command estimates support material."""
+    column = trimesh.creation.box(extents=[4, 4, 8])
+    bar = trimesh.creation.box(extents=[12, 4, 2])
+    bar.apply_translation([0, 0, 8])
+    mesh = trimesh.util.concatenate([column, bar])
+    with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as f:
+        mesh.export(f.name)
+        temp_path = f.name
+    try:
+        result = runner.invoke(app, ["support", temp_path])
+        assert result.exit_code == 0
+        assert "Support volume" in result.output
+        assert "Support material cost" in result.output
+    finally:
+        os.unlink(temp_path)
+
+
+def test_support_command_no_overhang():
+    """Support command on a clean cone shows zero support."""
+    cone = trimesh.creation.cone(radius=5, height=10)
+    with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as f:
+        cone.export(f.name)
+        temp_path = f.name
+    try:
+        result = runner.invoke(app, ["support", temp_path])
+        assert result.exit_code == 0
+        assert "Support volume: 0.00 cm3" in result.output
+    finally:
+        os.unlink(temp_path)

@@ -312,6 +312,31 @@ def detectors() -> None:
 
 
 @app.command()
+def support(
+    model_path: str = typer.Argument(..., help="Path to STL/3MF file"),
+    max_angle: float = typer.Option(45.0, "--max-angle", help="Overhang threshold (degrees)"),
+    density: float = typer.Option(0.15, "--density", help="Support density factor"),
+    price: float = typer.Option(25.0, "-p", "--price", help="Material price per kg"),
+) -> None:
+    """Estimate support material needed (volume, weight, cost)."""
+    from print_doctor.support import estimate_support_file
+
+    try:
+        est = estimate_support_file(model_path, max_angle=max_angle, density=density)
+        console.print(f"[bold blue]Support estimate for {model_path}:[/bold blue]")
+        console.print(f"  Overhang area: {est.overhang_area_mm2:.0f} mm2")
+        console.print(f"  Avg support height: {est.avg_support_height_mm:.1f} mm")
+        console.print(f"  Support volume: {est.support_volume_mm3 / 1000.0:.2f} cm3")
+        console.print(f"  Support weight: {est.support_weight_g:.1f} g")
+        console.print(f"  Support material cost: [bold green]${est.support_cost(price):.2f}[/bold green] "
+                      f"(PLA @ ${price}/kg)")
+        console.print("[dim](estimate only — calibrate --density against your slicer)[/dim]")
+    except Exception as e:
+        console.print(f"[bold red]Error: {e}[/bold red]")
+        raise typer.Exit(code=1)
+
+
+@app.command()
 def check_batch(
     models: List[str] = typer.Argument(..., help="Model files or directories"),
     output: str = typer.Option(None, "-o", "--output", help="Output summary path (md)"),
