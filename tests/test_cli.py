@@ -280,3 +280,22 @@ G1 E0.3
     result = runner.invoke(app, ["gcode-info", str(gcode), "-e", "0.2"])
     assert result.exit_code == 0
     assert "Progress" in result.output
+
+
+def test_check_3d_report(tmp_path):
+    """Test check --3d generates an interactive HTML report."""
+    mesh = trimesh.creation.icosphere(subdivisions=3)
+    with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as f:
+        mesh.export(f.name)
+        temp_path = f.name
+    try:
+        out = str(tmp_path / "report_3d.html")
+        result = runner.invoke(app, ["check", temp_path, "--3d", "-o", out])
+        assert result.exit_code == 0
+        assert os.path.exists(out)
+        content = Path(out).read_text()
+        assert "THREE.WebGLRenderer" in content
+        assert '"vertices"' in content
+        assert "PRINT DOCTOR" in content
+    finally:
+        os.unlink(temp_path)

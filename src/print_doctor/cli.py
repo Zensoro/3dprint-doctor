@@ -21,6 +21,7 @@ def check(
     model_path: str = typer.Argument(..., help="Path to STL/3MF file"),
     output: str = typer.Option(None, "-o", "--output", help="Output report path"),
     html: bool = typer.Option(False, "--html", help="Generate HTML report instead of Markdown"),
+    view3d: bool = typer.Option(False, "--3d", help="Generate interactive 3D HTML report with defect highlighting"),
     json: bool = typer.Option(False, "--json", help="Generate machine-readable JSON report"),
     material: str = typer.Option(
         "PLA", "-m", "--material", help="Material type (PLA/PETG/ABS/TPU)"
@@ -67,27 +68,38 @@ def check(
                 quote=QuoteConfig() if quote else None,
             )
 
-        if json:
-            from print_doctor.report import generate_json_report
-            report = generate_json_report(analysis, estimate)
-        elif html:
-            from print_doctor.report import generate_html_report
-            report = generate_html_report(analysis, estimate)
+        view3d_done = False
+        if view3d:
+            from print_doctor.visualize import generate_3d_report
+            out_path = output or "report_3d.html"
+            generate_3d_report(model_path, out_path, analysis)
+            console.print(f"[bold green]3D report saved to {out_path}[/bold green]")
+            view3d_done = True
         else:
-            report = generate_report(analysis, estimate)
+            if json:
+                from print_doctor.report import generate_json_report
+                report = generate_json_report(analysis, estimate)
+            elif html:
+                from print_doctor.report import generate_html_report
+                report = generate_html_report(analysis, estimate)
+            else:
+                report = generate_report(analysis, estimate)
 
-        if output:
-            Path(output).write_text(report)
-            if not json:
-                console.print(f"[bold green]Report saved to {output}[/bold green]")
-        elif json:
-            print(report)  # raw JSON to stdout for piping
-        else:
-            console.print(report)
+            if output:
+                Path(output).write_text(report)
+                if not json:
+                    console.print(f"[bold green]Report saved to {output}[/bold green]")
+            elif json:
+                print(report)  # raw JSON to stdout for piping
+            else:
+                console.print(report)
 
     except Exception as e:
         console.print(f"[bold red]Error: {e}[/bold red]")
         raise typer.Exit(code=1)
+
+    if view3d_done:
+        raise typer.Exit(code=0)
 
     if any(i.severity == Severity.ERROR for i in analysis.issues):
         raise typer.Exit(code=1)
