@@ -60,6 +60,11 @@ degenerate faces, thin walls (ray-cast), overhangs, self-intersections,
 isolated components and sliver triangles** — each with a severity level and an
 actionable fix. Outputs a 0-100 score.
 
+**Interactive 3D report** (`check --3d`): a self-contained HTML file with the
+model rendered in 3D and defect faces highlighted by type (overhang red,
+thin-wall yellow, self-intersection purple). Drag to rotate, scroll to zoom —
+no network needed to view.
+
 ### Mesh repair (`repair`)
 Fixes common issues automatically: **face normals, winding, stitching and
 degenerate faces**. Reports honestly what it *cannot* fix (large holes,

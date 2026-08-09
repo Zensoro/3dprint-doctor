@@ -2,6 +2,13 @@
 
 All notable changes to Print Doctor are documented here.
 
+## [0.9.0] - 2026-08-09
+
+### Added
+- Interactive 3D HTML report (`check --3d`): defect faces highlighted by type
+  on a rotatable/zoomable model, self-contained (three.js embedded, offline).
+- WebGL availability check with graceful degradation message.
+
 ## [0.8.0] - 2026-08-09
 
 ### Added
