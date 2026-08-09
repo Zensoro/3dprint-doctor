@@ -83,7 +83,12 @@ machine-readable **JSON** — print-shop ready.
 ### Real-time monitoring (`watch`)
 Samples a webcam, a watched directory, or a **Moonraker (Klipper) snapshot
 URL**, classifies each frame with ML, and alerts on defects — saving an
-evidence screenshot and optionally POSTing a webhook. Ships with an
+evidence screenshot and optionally POSTing a webhook.
+
+**Progress-aware**: give it your sliced G-code plus progress (manual
+`--progress` or auto from Moonraker `--moonraker http://printer:7125`) and the
+monitor shows `[47% · layer 123]` alongside defect alerts — so you know where
+in the print a failure happened. Ships with an
 **OctoPrint plugin** (`octoprint-print-doctor/`) that can pause the print on
 defect.
 

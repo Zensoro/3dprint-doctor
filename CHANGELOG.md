@@ -2,6 +2,13 @@
 
 All notable changes to Print Doctor are documented here.
 
+## [0.10.0] - 2026-08-09
+
+### Added
+- Progress-aware monitoring: `watch --gcode` + `--progress` (manual) or
+  `--moonraker` (auto from Klipper) shows `[NN% · layer N]` during monitoring.
+- Moonraker progress provider (elapsed/total duration via print_stats).
+
 ## [0.9.0] - 2026-08-09
 
 ### Added

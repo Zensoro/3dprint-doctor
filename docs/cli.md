@@ -136,3 +136,18 @@ print-doctor gcode-info <model.gcode> [options]
 
 Supports OrcaSlicer/PrusaSlicer (`;LAYER_CHANGE`) and Bambu Studio
 (`;LAYER:n`) markers.
+
+### Progress-aware monitoring
+
+Pass a sliced G-code file and a progress source to see layer/percent while
+monitoring:
+
+```bash
+# Manual progress
+print-doctor watch 0 --gcode model.gcode --progress 0.5
+
+# Auto from Moonraker (Klipper)
+print-doctor watch 0 --gcode model.gcode --moonraker http://printer:7125
+```
+
+Progress shows as `[47% · layer 123]` next to frame checks and defect alerts.
